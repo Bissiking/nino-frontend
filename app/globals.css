@@ -1,0 +1,763 @@
+:root {
+  --bg: #07100d;
+  --bg-2: #0b1713;
+  --surface: #111f1a;
+  --surface-2: #172922;
+  --ink: #effbf3;
+  --muted: #a2b8ad;
+  --line: rgba(181, 255, 209, 0.16);
+  --accent: #6dff9b;
+  --accent-2: #ffd36a;
+  --danger: #ff6b6b;
+  --warning: #ffd36a;
+  --success: #6dff9b;
+  --info: #7cc7ff;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  --text-xs: 0.78rem;
+  --text-sm: 0.9rem;
+  --text-md: 1rem;
+  --text-lg: 1.22rem;
+  --text-xl: 1.65rem;
+  --text-2xl: clamp(2.25rem, 5vw, 5.4rem);
+  --lh-tight: 1.04;
+  --lh-body: 1.55;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --shadow-soft: 0 24px 70px rgba(0, 0, 0, 0.36);
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 520ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(109, 255, 155, 0.08), transparent 280px),
+    var(--bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 4px;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  border-right: 1px solid var(--line);
+  background: rgba(7, 16, 13, 0.92);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.brand.large {
+  font-size: var(--text-xl);
+}
+
+.brandMark {
+  align-items: center;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  color: #07100d;
+  display: inline-flex;
+  font-family: var(--font-mono);
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.navList,
+.sideActions {
+  display: grid;
+  gap: 8px;
+}
+
+.sideActions {
+  margin-top: auto;
+}
+
+.navItem,
+.iconTextButton,
+.secondaryButton,
+.primaryButton {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.navItem,
+.iconTextButton {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  text-align: left;
+}
+
+.iconTextButton {
+  width: 100%;
+}
+
+.navItem:hover,
+.iconTextButton:hover,
+.navItem.active {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.mainSurface {
+  min-width: 0;
+  padding: 28px;
+}
+
+.homeStack {
+  display: grid;
+  gap: 34px;
+}
+
+.heroConsole {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  min-height: 520px;
+  overflow: hidden;
+  position: relative;
+}
+
+.heroBackdrop,
+.playerBackdrop,
+.posterImage {
+  object-fit: cover;
+}
+
+.heroBackdrop {
+  filter: saturate(0.92) brightness(0.58);
+  z-index: 0;
+}
+
+.heroConsole::after {
+  background: linear-gradient(90deg, rgba(7, 16, 13, 0.95), rgba(7, 16, 13, 0.58), rgba(7, 16, 13, 0.16));
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.heroContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 680px;
+  padding: 54px;
+  position: relative;
+  z-index: 2;
+}
+
+.heroContent h1,
+.searchSurface h1,
+.watchMeta h1,
+.adminSurface h1,
+.profileHeader h1,
+.authPanel h1 {
+  letter-spacing: 0;
+  line-height: var(--lh-tight);
+  margin: 0;
+}
+
+.heroContent h1 {
+  font-size: var(--text-2xl);
+  max-width: 10ch;
+}
+
+.heroContent p {
+  color: #d9ebe2;
+  font-size: var(--text-lg);
+  line-height: var(--lh-body);
+  margin: 0;
+  max-width: 62ch;
+}
+
+.signalBadge,
+.heroFacts,
+.decisionPanel span,
+.mediaMeta {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.signalBadge,
+.heroFacts,
+.decisionPanel span {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.heroFacts {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heroFacts span,
+.signalBadge {
+  background: rgba(17, 31, 26, 0.78);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  font-weight: 800;
+  justify-content: center;
+  padding: 0 18px;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #07100d;
+  max-width: max-content;
+}
+
+.secondaryButton {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.wide {
+  max-width: none;
+  width: 100%;
+}
+
+.heroSignal {
+  bottom: 44px;
+  display: grid;
+  gap: 9px;
+  position: absolute;
+  right: 48px;
+  width: min(360px, 35vw);
+  z-index: 3;
+}
+
+.heroSignal span {
+  animation: sweep 2.8s var(--ease-out) infinite;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  height: 2px;
+}
+
+.heroSignal span:nth-child(2) {
+  animation-delay: 180ms;
+}
+
+.heroSignal span:nth-child(3) {
+  animation-delay: 360ms;
+}
+
+.rail {
+  display: grid;
+  gap: 14px;
+}
+
+.railHeader {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+}
+
+.railHeader h2 {
+  font-size: var(--text-xl);
+  margin: 0;
+}
+
+.railHeader span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.railScroller,
+.resultGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.railScroller {
+  grid-auto-columns: minmax(164px, 220px);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 4px 4px 18px;
+  scroll-snap-type: x proximity;
+}
+
+.resultGrid {
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+}
+
+.mediaCard {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.posterFrame {
+  aspect-ratio: 2 / 3;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+}
+
+.posterFallback {
+  align-items: center;
+  color: var(--accent);
+  display: flex;
+  font-size: 4rem;
+  height: 100%;
+  justify-content: center;
+}
+
+.playChip {
+  align-items: center;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  bottom: 10px;
+  color: #07100d;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  position: absolute;
+  right: 10px;
+  width: 30px;
+}
+
+.mediaTitle {
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progressTrack {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  display: block;
+  height: 5px;
+  overflow: hidden;
+}
+
+.progressTrack span {
+  background: var(--accent-2);
+  display: block;
+  height: 100%;
+}
+
+.stateBlock {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  margin: 24px 0;
+  min-height: 160px;
+  padding: 28px;
+  text-align: center;
+}
+
+.stateTitle {
+  color: var(--ink);
+  font-weight: 800;
+  margin: 0;
+}
+
+.errorState {
+  border-color: rgba(255, 107, 107, 0.45);
+}
+
+.spin {
+  animation: rotate 1s linear infinite;
+}
+
+.authScreen,
+.profileScreen {
+  align-items: center;
+  display: grid;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.authScreen {
+  justify-content: center;
+}
+
+.authPanel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 18px;
+  max-width: 430px;
+  padding: 28px;
+  width: min(430px, 100%);
+}
+
+.authPanel label {
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+}
+
+.authPanel input,
+.searchBox input {
+  background: #07100d;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.formError {
+  color: var(--danger);
+  margin: 0;
+}
+
+.profileScreen {
+  align-content: center;
+  gap: 36px;
+}
+
+.profileHeader {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  text-align: center;
+}
+
+.profileGrid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 0 auto;
+  max-width: 760px;
+  width: 100%;
+}
+
+.profileTile {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  min-height: 190px;
+  padding: 18px;
+}
+
+.avatarDisc {
+  align-items: center;
+  background: var(--surface-2);
+  border-radius: 50%;
+  color: var(--accent);
+  display: flex;
+  height: 96px;
+  justify-content: center;
+  width: 96px;
+}
+
+.searchSurface,
+.adminSurface {
+  display: grid;
+  gap: 22px;
+}
+
+.searchSurface h1,
+.watchMeta h1,
+.adminSurface h1 {
+  font-size: clamp(2rem, 4vw, 4rem);
+}
+
+.searchBox {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto 1fr auto;
+  padding: 10px;
+}
+
+.searchBox input {
+  width: 100%;
+}
+
+.watchSurface {
+  display: grid;
+  gap: 22px;
+}
+
+.playerDeck {
+  aspect-ratio: 16 / 8;
+  background: #020403;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  min-height: 360px;
+  overflow: hidden;
+  position: relative;
+}
+
+.playerDeck::after {
+  background:
+    linear-gradient(180deg, transparent, rgba(109, 255, 155, 0.12), transparent),
+    repeating-linear-gradient(0deg, rgba(109, 255, 155, 0.08), rgba(109, 255, 155, 0.08) 1px, transparent 1px, transparent 24px);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.playerBackdrop {
+  filter: brightness(0.38) saturate(0.9);
+}
+
+.playhead {
+  align-items: center;
+  display: grid;
+  gap: 28px;
+  inset: 0;
+  justify-items: center;
+  padding: 36px;
+  position: absolute;
+  z-index: 2;
+}
+
+.playButton {
+  align-items: center;
+  background: var(--accent);
+  border: 0;
+  border-radius: 50%;
+  color: #07100d;
+  display: flex;
+  height: 88px;
+  justify-content: center;
+  width: 88px;
+}
+
+.waveform {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+  height: 90px;
+  max-width: 760px;
+  width: min(80%, 760px);
+}
+
+.waveform span {
+  background: var(--accent);
+  border-radius: 2px;
+  flex: 1;
+  opacity: 0.78;
+}
+
+.watchMeta {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+}
+
+.watchMeta p {
+  color: var(--muted);
+  line-height: var(--lh-body);
+  max-width: 72ch;
+}
+
+.decisionPanel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.adminGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.statTile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 12px;
+  min-height: 150px;
+  padding: 18px;
+}
+
+.statTile svg {
+  color: var(--accent);
+}
+
+.statTile span {
+  color: var(--muted);
+}
+
+.statTile strong {
+  font-size: 2.4rem;
+}
+
+.bottomNav {
+  display: none;
+}
+
+@keyframes sweep {
+  from {
+    opacity: 0;
+    transform: translateX(-30%);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30%);
+  }
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .mainSurface {
+    padding: 18px 18px 82px;
+  }
+
+  .bottomNav {
+    align-items: center;
+    background: rgba(7, 16, 13, 0.94);
+    border-top: 1px solid var(--line);
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    left: 0;
+    min-height: 64px;
+    position: fixed;
+    right: 0;
+    z-index: 10;
+  }
+
+  .bottomNav a {
+    align-items: center;
+    color: var(--muted);
+    display: flex;
+    justify-content: center;
+    min-height: 54px;
+  }
+
+  .heroConsole {
+    min-height: 470px;
+  }
+
+  .heroContent {
+    padding: 28px;
+  }
+
+  .heroContent h1 {
+    font-size: clamp(2.35rem, 12vw, 4rem);
+  }
+
+  .heroSignal {
+    bottom: 24px;
+    left: 28px;
+    right: 28px;
+    width: auto;
+  }
+
+  .watchMeta,
+  .searchBox {
+    grid-template-columns: 1fr;
+  }
+
+  .playerDeck {
+    aspect-ratio: 16 / 11;
+    min-height: 280px;
+  }
+}
