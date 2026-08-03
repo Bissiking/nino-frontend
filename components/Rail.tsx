@@ -1,24 +1,18 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import type { HomeRail } from "@/types/nino";
 import { EmptyState } from "./StateBlock";
 import { MediaCard } from "./MediaCard";
 
 export function Rail({ rail }: { rail: HomeRail }) {
+  const portrait = rail.id === "shorts";
   return (
-    <section className="rail" aria-labelledby={`rail-${rail.id}`}>
+    <section className={`rail ${portrait ? "flashyRail" : ""}`} id={rail.id} aria-labelledby={`rail-${rail.id}`}>
       <div className="railHeader">
         <h2 id={`rail-${rail.id}`}>{rail.title}</h2>
-        <span>{rail.items.length} titres</span>
+        {portrait && rail.items.length ? <Link href="/flashy">Tout voir <ChevronRight size={18} aria-hidden="true" /></Link> : null}
       </div>
-      {rail.items.length ? (
-        <div className="railScroller">
-          {rail.items.map((item, index) => (
-            <MediaCard item={item} key={item.id} priority={index < 3} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState title="Rien ici pour l'instant" message="Ce rail se remplira avec l'historique, les favoris ou les scans." />
-      )}
+      {rail.items.length ? <div className={`railScroller ${portrait ? "portraitScroller" : ""}`}>{rail.items.map((item, index) => <MediaCard item={item} key={item.id} priority={index < 3} portrait={portrait} />)}</div> : <EmptyState title="Rien à afficher pour l’instant" message="De nouveaux programmes apparaîtront ici dès qu’ils seront disponibles." />}
     </section>
   );
 }
-

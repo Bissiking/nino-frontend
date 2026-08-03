@@ -1,0 +1,75 @@
+{
+  "title": "Choisir l'univers visuel de Nino",
+  "question": "Quel système doit porter le menu, le hero, Flashy, le Top 10 et les catégories ?",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Nino Festival Pass",
+      "kicker": "DIRECTION PROPOSÉE",
+      "lineage": "programmes de festivals créatifs, bracelets et signalétique de scènes",
+      "thesis": "Chaque émission est un rendez-vous et chaque catégorie une scène de la programmation Nino.",
+      "palette": ["#ff4d62", "#ff7a21", "#160d19", "#fff4ea"],
+      "materials": ["papier fluorescent", "rubans de programmation", "grands aplats éditoriaux"],
+      "viewport": "Un hero plein écran devient l'affiche principale, traversé par une programmation compacte et suivi du Top 10.",
+      "risk": "Peut sembler événementiel si les cartes et états ne restent pas assez sobres.",
+      "sketch": ".impeccable/sketches/assigned.png"
+    },
+    {
+      "id": "challenger-board",
+      "label": "Creator Departure Board",
+      "kicker": "ALTERNATIVE",
+      "lineage": "tableaux de départ et cartes d'embarquement",
+      "thesis": "Les directs et nouveautés sont une grille vivante qui se réordonne sans perdre le programme suivi.",
+      "palette": ["#16131a", "#f7eee8", "#ff5266", "#ff8a24"],
+      "materials": ["panneaux segmentés", "grilles horaires", "tickets de programme"],
+      "viewport": "Le hero partage l'écran avec un tableau compact des programmes maintenant, ensuite et populaires.",
+      "risk": "Très clair pour le direct, mais moins naturel pour une exploration détendue du catalogue.",
+      "case": "Clarté produit forte, identification créateur plus faible que Festival Pass.",
+      "sketch": ".impeccable/sketches/challenger-board.png",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board.webp"
+    },
+    {
+      "id": "challenger-fold",
+      "label": "Folded Formats",
+      "kicker": "ALTERNATIVE",
+      "lineage": "séquences de papier plié et formes déployables",
+      "thesis": "Une même feuille corail se déploie différemment pour une émission, un direct ou Flashy.",
+      "palette": ["#ff5364", "#ff8028", "#f9eee5", "#24121d"],
+      "materials": ["papier fibreux", "plis francs", "repères dorés"],
+      "viewport": "Le hero est une grande image découpée par un pli diagonal qui ouvre les différents formats.",
+      "risk": "La métaphore peut prendre le pas sur la lisibilité d'une interface utilisée à la télécommande.",
+      "case": "Très distinctif pour la marque, moins explicite pour parcourir rapidement beaucoup de vidéos.",
+      "sketch": ".impeccable/sketches/challenger-fold.png",
+      "hero": "https://impeccable.style/worlds/cards/paper-folds-pleats-deployable-orizuru-crane-sequence-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/paper-folds-pleats-deployable-orizuru-crane-sequence.webp"
+    },
+    {
+      "id": "challenger-counter",
+      "label": "Studio Counter",
+      "kicker": "ALTERNATIVE",
+      "lineage": "compteurs de studio et tubes Nixie",
+      "thesis": "Les numéros d'épisodes, classements et audiences deviennent la matière lumineuse du studio Nino.",
+      "palette": ["#0d0a0f", "#ff572f", "#ff9a32", "#eaded6"],
+      "materials": ["verre fumé", "châssis noir", "chiffres orange lumineux"],
+      "viewport": "Le Top 10 monumental encadre un hero vidéo sombre comme un compteur de régie.",
+      "risk": "Le système magnifie le classement mais enferme les autres catégories dans un imaginaire technique.",
+      "case": "Impact télévisuel élevé, mais clarté et variété éditoriales moins solides.",
+      "sketch": ".impeccable/sketches/challenger-counter.png",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-nixie-laboratory-counter-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/signals-instruments-nixie-laboratory-counter.webp"
+    }
+  ],
+  "reroll": true,
+  "canon": true,
+  "canonCard": {
+    "label": "Le standard streaming",
+    "thesis": "Menu familier, hero cinématographique, rangées de contenus et Top 10 exécutés avec précision.",
+    "viewport": "Une navigation YouTube, un grand hero de programme et des rails immédiatement reconnaissables.",
+    "risk": "Très accessible, mais l'identité propre de Nino dépend presque entièrement des couleurs du logo.",
+    "palette": ["#0d0b0f", "#ff5364", "#ff8128", "#f8f4f1"],
+    "materials": ["surfaces vidéo sombres", "cartes panoramiques", "contrôles sobres"],
+    "sketch": ".impeccable/sketches/canon.png"
+  },
+  "steer": true
+}

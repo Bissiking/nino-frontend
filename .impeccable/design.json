@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-03T16:20:57Z",
+  "title": "Design System: Nino Frontend",
+  "extensions": {
+    "colorMeta": {
+      "viewing-room": { "role": "neutral", "displayName": "Viewing Room", "canonical": "#0d0b0f" },
+      "coral": { "role": "primary", "displayName": "Nino Coral", "canonical": "#ff5264" },
+      "orange": { "role": "secondary", "displayName": "Nino Orange", "canonical": "#ff8128" }
+    },
+    "shadows": [
+      { "name": "media-lift", "value": "0 18px 38px rgba(0, 0, 0, 0.38)", "purpose": "Réponse au survol et au focus des médias." },
+      { "name": "ambient", "value": "0 24px 70px rgba(0, 0, 0, 0.38)", "purpose": "Séparation des panneaux majeurs." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Révélation du hero et mouvements d’interaction." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "760px" },
+      { "name": "compact-tv", "value": "1100px" },
+      { "name": "wide", "value": "1600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action de lecture principale, corail et lisible à distance.",
+      "html": "<button class=\"ds-btn-primary\">Regarder</button>",
+      "css": ".ds-btn-primary{background:#ff5264;color:#1b080c;border:0;border-radius:10px;min-height:48px;padding:0 20px;font:800 1rem 'Sora Variable',Helvetica,Arial,sans-serif}.ds-btn-primary:hover{background:#ff7280}.ds-btn-primary:focus-visible{outline:3px solid #ff8128;outline-offset:4px}"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "description": "Destination de la sidebar avec état actif tonal.",
+      "html": "<a class=\"ds-nav-item\" href=\"#\">Accueil</a>",
+      "css": ".ds-nav-item{display:flex;align-items:center;min-height:46px;padding:0 13px;background:#242026;color:#fff8f4;border-radius:10px;font:700 1rem 'Sora Variable',Helvetica,Arial,sans-serif}.ds-nav-item:hover{background:#302a32}.ds-nav-item:focus-visible{outline:3px solid #ff8128;outline-offset:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La salle de diffusion Nino",
+    "overview": "Une expérience de streaming personnelle sombre, chaleureuse et centrée sur les créations, conçue d’abord pour la télévision.",
+    "keyCharacteristics": ["hero cinématographique", "navigation vidéo compacte", "Top 10 chiffré", "accents corail et orange", "focus télécommande visible"],
+    "rules": [
+      { "name": "The Signal Rule", "body": "Le corail indique l’action ou la marque ; l’orange indique le focus ou le rang.", "section": "colors" }
+    ],
+    "dos": ["Laisser les visuels du catalogue porter l’atmosphère.", "Maintenir des cibles de 42 à 48px minimum."],
+    "donts": ["Réintroduire le vert phosphore.", "Encadrer chaque contenu média dans un panneau." ]
+  }
+}

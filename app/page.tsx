@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { CategoryStrip } from "@/components/CategoryStrip";
 import { HeroConsole } from "@/components/HeroConsole";
+import { HomeTopTen } from "@/components/HomeTopTen";
 import { Rail } from "@/components/Rail";
 import { ErrorState, LoadingState } from "@/components/StateBlock";
 import { api } from "@/lib/api";
@@ -18,14 +20,13 @@ export default function HomePage() {
   function load() {
     setLoading(true);
     setError(null);
-    api
-      .home(profileId)
-      .then(setHome)
-      .catch((err) => setError(err.message ?? "Connexion au backend impossible."))
-      .finally(() => setLoading(false));
+    api.home(profileId).then(setHome).catch((err) => setError(err.message ?? "Connexion au backend impossible.")).finally(() => setLoading(false));
   }
 
   useEffect(load, [profileId]);
+
+  const topTen = home?.rails.find((rail) => rail.id === "top10")?.items ?? [];
+  const visibleRails = home?.rails.filter((rail) => rail.id !== "top10" && (rail.items.length > 0 || rail.id === "latest")) ?? [];
 
   return (
     <AppShell>
@@ -34,12 +35,13 @@ export default function HomePage() {
       {!loading && !error && home ? (
         <div className="homeStack">
           <HeroConsole item={home.hero} />
-          {home.rails.map((rail) => (
-            <Rail rail={rail} key={rail.id} />
-          ))}
+          <div className="homeCatalog">
+            <HomeTopTen items={topTen} />
+            <CategoryStrip rails={home.rails} />
+            {visibleRails.map((rail) => <Rail rail={rail} key={rail.id} />)}
+          </div>
         </div>
       ) : null}
     </AppShell>
   );
 }
-

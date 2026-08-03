@@ -1,18 +1,31 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Clapperboard, Heart, Home, LogOut, Radio, Search, Settings, Tv } from "lucide-react";
+import { Clapperboard, Compass, Gamepad2, History, Home, LogOut, Radio, Search, Settings, UserRound, Zap } from "lucide-react";
 import { clearSession } from "@/lib/session";
+import { TvNavigation } from "./TvNavigation";
 
-const nav = [
+const primaryNav = [
   { href: "/", label: "Accueil", icon: Home },
-  { href: "/search", label: "Recherche", icon: Search },
-  { href: "/?kind=movie", label: "Films", icon: Clapperboard },
-  { href: "/?kind=series", label: "Series", icon: Tv },
-  { href: "/?kind=live", label: "Live", icon: Radio },
-  { href: "/admin", label: "Admin", icon: Settings }
+  { href: "/flashy", label: "Flashy", icon: Zap },
+  { href: "/search", label: "Explorer", icon: Compass },
+  { href: "/#series", label: "Séries gaming", icon: Gamepad2 },
+  { href: "/#movies", label: "Émissions", icon: Clapperboard },
+  { href: "/#live", label: "En direct", icon: Radio }
 ];
+
+const secondaryNav = [
+  { href: "/#continue", label: "Reprendre", icon: History },
+  { href: "/profiles", label: "Changer de profil", icon: UserRound },
+  { href: "/admin", label: "Administration", icon: Settings }
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return !href.includes("#") && pathname.startsWith(href);
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -20,56 +33,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="shell">
-      <aside className="sidebar" aria-label="Navigation principale">
-        <Link href="/" className="brand" aria-label="Nino accueil">
-          <span className="brandMark">N</span>
-          <span>Nino</span>
+      <TvNavigation />
+      <header className="topBar">
+        <Link href="/" className="brand" aria-label="Nino — accueil">
+          <Image src="/logo_nino.png" alt="Nino" width={111} height={42} priority />
         </Link>
+        <Link href="/search" className="globalSearch" aria-label="Rechercher dans Nino">
+          <Search size={19} aria-hidden="true" />
+          <span>Rechercher une émission, une série, un créateur…</span>
+          <kbd>/</kbd>
+        </Link>
+        <div className="topActions">
+          <Link className="profileAvatar" href="/profiles" aria-label="Changer de profil"><UserRound size={21} aria-hidden="true" /></Link>
+        </div>
+      </header>
+
+      <aside className="sidebar" aria-label="Navigation principale">
         <nav className="navList">
-          {nav.map((item) => {
+          {primaryNav.map((item) => {
             const Icon = item.icon;
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href.split("?")[0]);
-            return (
-              <Link className={`navItem ${active ? "active" : ""}`} href={item.href} key={item.label}>
-                <Icon size={19} aria-hidden="true" />
-                <span>{item.label}</span>
-              </Link>
-            );
+            const active = isActive(pathname, item.href);
+            return <Link className={`navItem ${active ? "active" : ""}`} href={item.href} key={item.label} aria-current={active ? "page" : undefined}><Icon size={20} aria-hidden="true" /><span>{item.label}</span></Link>;
           })}
         </nav>
-        <div className="sideActions">
-          <button className="iconTextButton" type="button" title="Notifications">
-            <Bell size={18} aria-hidden="true" />
-            <span>Notifications</span>
-          </button>
-          <button
-            className="iconTextButton"
-            type="button"
-            onClick={() => {
-              clearSession();
-              router.push("/login");
-            }}
-          >
-            <LogOut size={18} aria-hidden="true" />
-            <span>Sortir</span>
-          </button>
-        </div>
+        <div className="navDivider" />
+        <p className="navLabel">Ma Nino</p>
+        <nav className="navList">
+          {secondaryNav.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(pathname, item.href);
+            return <Link className={`navItem ${active ? "active" : ""}`} href={item.href} key={item.label} aria-current={active ? "page" : undefined}><Icon size={20} aria-hidden="true" /><span>{item.label}</span></Link>;
+          })}
+        </nav>
+        <button className="navItem logoutButton" type="button" onClick={() => { clearSession(); router.push("/login"); }}>
+          <LogOut size={20} aria-hidden="true" /><span>Déconnexion</span>
+        </button>
       </aside>
-      <main className="mainSurface">{children}</main>
+
+      <main className={`mainSurface ${pathname === "/" ? "homeSurface" : ""}`}>{children}</main>
+
       <nav className="bottomNav" aria-label="Navigation mobile">
-        {nav.slice(0, 5).map((item) => {
+        {primaryNav.slice(0, 4).map((item) => {
           const Icon = item.icon;
-          return (
-            <Link href={item.href} key={item.label} aria-label={item.label}>
-              <Icon size={22} aria-hidden="true" />
-            </Link>
-          );
+          const active = isActive(pathname, item.href);
+          return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-label={item.label} aria-current={active ? "page" : undefined}><Icon size={21} aria-hidden="true" /><span>{item.label}</span></Link>;
         })}
-        <Link href="/profiles" aria-label="Favoris et profil">
-          <Heart size={22} aria-hidden="true" />
-        </Link>
       </nav>
     </div>
   );
 }
-

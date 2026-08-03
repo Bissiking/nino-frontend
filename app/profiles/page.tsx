@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { UserRound } from "lucide-react";
 import { api } from "@/lib/api";
 import { saveProfileId } from "@/lib/session";
@@ -25,11 +26,9 @@ export default function ProfilesPage() {
   return (
     <main className="profileScreen">
       <div className="profileHeader">
-        <div className="brand large">
-          <span className="brandMark">N</span>
-          <span>Nino</span>
-        </div>
-        <h1>Choisir un profil</h1>
+        <Image src="/logo_nino.png" alt="Nino" width={139} height={53} priority />
+        <h1>Qui regarde ?</h1>
+        <p>Choisissez votre profil pour personnaliser Nino.</p>
       </div>
       {loading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} onRetry={load} /> : null}
@@ -54,4 +53,3 @@ export default function ProfilesPage() {
     </main>
   );
 }
-

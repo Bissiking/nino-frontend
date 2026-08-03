@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/sora";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07100d",
+  themeColor: "#0d0b0f",
   width: "device-width",
   initialScale: 1
 };
@@ -17,15 +18,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body>
-        {/* THESIS: Nino is a signal console for a private media library, refusing generic streaming rows without system status.
-OWN-WORLD: near-black phosphor console, precise rails, square graticule texture, compact controls and measurable playback states.
-STORY: the user authenticates, chooses a profile, resumes or finds media, then lets the backend decide playback.
-FIRST VIEWPORT: sidebar control rail, large live signal hero, and scrollable media rails with progress traces.
-FORM: operate surface, signal-bench direction from seed 3a1fb834.
+        {/* THESIS: Nino unifies creator shows, live programs and vertical Flashy videos in a familiar TV-first streaming home.
+OWN-WORLD: near-black plum viewing surfaces, coral-to-orange brand moments, image-led rails and compact video-platform controls.
+STORY: a profile enters, sees the featured program, scans categories and the ranked Top 10, then watches or opens Flashy.
+FIRST VIEWPORT: a fixed YouTube-like navigation frames a Netflix-scale hero; categories and a Prime-style Top 10 begin below.
+FORM: operate surface, category-standard streaming direction explicitly chosen from seed 7df646fe.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md */}
         {children}
       </body>
     </html>
   );
 }
-

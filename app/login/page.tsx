@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { KeyRound, LogIn } from "lucide-react";
 import { api } from "@/lib/api";
 import { saveTokens } from "@/lib/session";
@@ -31,11 +32,8 @@ export default function LoginPage() {
   return (
     <main className="authScreen">
       <form className="authPanel" onSubmit={submit}>
-        <div className="brand large">
-          <span className="brandMark">N</span>
-          <span>Nino</span>
-        </div>
-        <h1>Connexion</h1>
+        <div className="authBrand"><Image src="/logo_nino.png" alt="Nino" width={139} height={53} priority /></div>
+        <div className="authIntro"><h1>Bon retour sur Nino</h1><p>Connectez-vous pour retrouver vos programmes et votre profil.</p></div>
         <label>
           Identifiant
           <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="username" required />
@@ -47,10 +45,9 @@ export default function LoginPage() {
         {error ? <p className="formError" role="alert">{error}</p> : null}
         <button className="primaryButton wide" type="submit" disabled={loading}>
           {loading ? <KeyRound size={18} aria-hidden="true" /> : <LogIn size={18} aria-hidden="true" />}
-          {loading ? "Verification" : "Entrer"}
+          {loading ? "Vérification" : "Se connecter"}
         </button>
       </form>
     </main>
   );
 }
-
