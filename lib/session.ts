@@ -14,9 +14,18 @@ export function saveTokens(accessToken: string, refreshToken: string) {
 }
 
 export function clearSession() {
+  if (typeof window === "undefined") return;
   window.localStorage.removeItem(ACCESS_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
   window.localStorage.removeItem(PROFILE_KEY);
+}
+
+export function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  clearSession();
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
+  }
 }
 
 export function getProfileId() {
@@ -26,4 +35,3 @@ export function getProfileId() {
 export function saveProfileId(profileId: string) {
   window.localStorage.setItem(PROFILE_KEY, profileId);
 }
-

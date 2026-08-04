@@ -228,12 +228,16 @@ Corps :
 
 ```json
 {
-  "email": "admin@nino.local",
-  "password": "nino-admin"
+  "username": "matheo",
+  "password": "mot-de-passe-en-clair"
 }
 ```
 
-Validation : email normalisé en minuscules ; mot de passe d'au moins 4 caractères.
+Le champ `username` contient le nom d'utilisateur attendu par Kyros. Le backend
+accepte encore temporairement `email` comme alias pour les anciens clients Nino.
+
+Validation : nom d'utilisateur non vide, limité à 255 caractères et normalisé en
+minuscules par Nino ; mot de passe d'au moins 4 caractères.
 
 Réponse `200` :
 

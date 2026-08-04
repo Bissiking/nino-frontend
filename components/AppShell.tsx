@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Clapperboard, Compass, Gamepad2, History, Home, LogOut, Radio, Search, Settings, UserRound, Zap } from "lucide-react";
+import { Clapperboard, Compass, Gamepad2, History, Home, LogOut, PanelsTopLeft, Radio, Search, UserRound, Zap } from "lucide-react";
 import { clearSession } from "@/lib/session";
 import { TvNavigation } from "./TvNavigation";
 
@@ -19,7 +19,7 @@ const primaryNav = [
 const secondaryNav = [
   { href: "/#continue", label: "Reprendre", icon: History },
   { href: "/profiles", label: "Changer de profil", icon: UserRound },
-  { href: "/admin", label: "Administration", icon: Settings }
+  { href: "/studio", label: "Nino Studio", icon: PanelsTopLeft }
 ];
 
 function isActive(pathname: string, href: string) {
@@ -44,6 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <kbd>/</kbd>
         </Link>
         <div className="topActions">
+          <Link className="studioShortcut" href="/studio" aria-label="Ouvrir Nino Studio"><PanelsTopLeft size={20} aria-hidden="true" /></Link>
           <Link className="profileAvatar" href="/profiles" aria-label="Changer de profil"><UserRound size={21} aria-hidden="true" /></Link>
         </div>
       </header>

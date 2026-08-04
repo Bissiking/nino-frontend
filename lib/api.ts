@@ -1,24 +1,31 @@
 "use client";
 
 import type { ApiResponse, HomePayload, MediaItem, NotificationItem, Profile, StreamDecision, TokenPair, User } from "@/types/nino";
-import { getAccessToken } from "./session";
+import { getAccessToken, redirectToLogin } from "./session";
 
 const API_URL = process.env.NEXT_PUBLIC_NINO_API_URL ?? "http://localhost:8000";
 
 export class NinoApiError extends Error {
   code: string;
   details: Record<string, unknown>;
+  status: number;
 
-  constructor(code: string, message: string, details: Record<string, unknown> = {}) {
+  constructor(code: string, message: string, details: Record<string, unknown> = {}, status = 0) {
     super(message);
     this.name = "NinoApiError";
     this.code = code;
     this.details = details;
+    this.status = status;
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, requiresAuth = true): Promise<T> {
   const token = getAccessToken();
+  if (requiresAuth && !token) {
+    redirectToLogin();
+    throw new NinoApiError("AUTH_REQUIRED", "Connexion requise.", {}, 401);
+  }
+
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
@@ -28,18 +35,23 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
   });
   const body = (await response.json()) as ApiResponse<T>;
+
+  if (requiresAuth && response.status === 401) {
+    redirectToLogin();
+  }
+
   if (!body.success) {
-    throw new NinoApiError(body.error.code, body.error.message, body.error.details);
+    throw new NinoApiError(body.error.code, body.error.message, body.error.details, response.status);
   }
   return body.data;
 }
 
 export const api = {
-  login: (email: string, password: string) =>
+  login: (identifier: string, password: string) =>
     request<TokenPair>("/api/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password })
-    }),
+      body: JSON.stringify({ username: identifier, password })
+    }, false),
   me: () => request<User>("/api/v1/me"),
   profiles: () => request<Profile[]>("/api/v1/profiles"),
   home: (profileId?: string | null) => request<HomePayload>(`/api/v1/home${profileId ? `?profile_id=${profileId}` : ""}`),
@@ -68,4 +80,3 @@ export const api = {
   adminStats: () =>
     request<{ users: number; libraries: number; media: number; transcode_jobs: number; scan_jobs: number }>("/api/v1/admin/stats")
 };
-

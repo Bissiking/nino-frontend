@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SessionGate } from "@/components/SessionGate";
 import "@fontsource-variable/sora";
 import "./globals.css";
 
@@ -24,7 +25,7 @@ STORY: a profile enters, sees the featured program, scans categories and the ran
 FIRST VIEWPORT: a fixed YouTube-like navigation frames a Netflix-scale hero; categories and a Prime-style Top 10 begin below.
 FORM: operate surface, category-standard streaming direction explicitly chosen from seed 7df646fe.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md */}
-        {children}
+        <SessionGate>{children}</SessionGate>
       </body>
     </html>
   );

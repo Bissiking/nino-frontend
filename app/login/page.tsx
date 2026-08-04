@@ -9,8 +9,8 @@ import { saveTokens } from "@/lib/session";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@nino.local");
-  const [password, setPassword] = useState("nino-admin");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const tokens = await api.login(email, password);
+      const tokens = await api.login(identifier.trim(), password);
       saveTokens(tokens.access_token, tokens.refresh_token);
       router.push("/profiles");
     } catch (err) {
@@ -35,8 +35,17 @@ export default function LoginPage() {
         <div className="authBrand"><Image src="/logo_nino.png" alt="Nino" width={139} height={53} priority /></div>
         <div className="authIntro"><h1>Bon retour sur Nino</h1><p>Connectez-vous pour retrouver vos programmes et votre profil.</p></div>
         <label>
-          Identifiant
-          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="username" required />
+          Nom d’utilisateur
+          <input
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={255}
+            required
+          />
         </label>
         <label>
           Mot de passe
