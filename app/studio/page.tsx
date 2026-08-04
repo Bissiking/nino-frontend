@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   CalendarClock,
-  CheckCircle2,
   ChevronRight,
   CircleOff,
   Clapperboard,
   Database,
+  Download,
   Film,
-  FolderSearch2,
   LayoutDashboard,
   ListVideo,
   Plus,
@@ -26,10 +25,22 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorState } from "@/components/StateBlock";
+import { V7MigrationWorkspace } from "@/components/studio/V7MigrationWorkspace";
+import { V7ImportWorkspace } from "@/components/studio/V7ImportWorkspace";
 import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
 
-type StudioView = "overview" | "series" | "flashy" | "videos" | "schedule" | "live" | "administration";
+type StudioView = "overview" | "series" | "flashy" | "videos" | "schedule" | "live" | "import" | "administration";
+
+function moveStudioTabFocus(event: KeyboardEvent<HTMLElement>) {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  const controls = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
+  const index = controls.indexOf(document.activeElement as HTMLButtonElement);
+  if (index < 0) return;
+  const next = controls[(index + (event.key === "ArrowLeft" ? -1 : 1) + controls.length) % controls.length];
+  event.preventDefault();
+  next.focus();
+}
 
 type Stats = {
   users: number;
@@ -52,6 +63,7 @@ const sections: StudioSection[] = [
   { id: "videos", label: "Vidéos", icon: Film },
   { id: "schedule", label: "Programmation", icon: CalendarClock },
   { id: "live", label: "Direct", icon: Radio },
+  { id: "import", label: "Import V7", icon: Download },
   { id: "administration", label: "Administration", icon: Settings }
 ];
 
@@ -238,17 +250,7 @@ function AdministrationWorkspace({ stats }: { stats: Stats }) {
         <header><h2>État de Nino</h2><p>Informations fournies par l’administration V8.</p></header>
         <dl>{statRows.map(([label, value, Icon]) => <div key={label}><Icon size={20} aria-hidden="true" /><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       </section>
-      <section className="studioV7Panel">
-        <div className="studioV7Icon"><FolderSearch2 size={28} aria-hidden="true" /></div>
-        <div><h2>Récupération des métadonnées Nino V7</h2><p>Le scan préparera une liste de contenus à contrôler avant import, sans modifier le catalogue V8 automatiquement.</p></div>
-        <ol>
-          <li><CheckCircle2 size={17} aria-hidden="true" /><span>Interroger l’API Nino V7</span></li>
-          <li><CheckCircle2 size={17} aria-hidden="true" /><span>Comparer et signaler les champs manquants</span></li>
-          <li><CheckCircle2 size={17} aria-hidden="true" /><span>Ouvrir chaque fiche avant import</span></li>
-        </ol>
-        <button className="primaryButton" type="button" disabled title="Endpoint de scan V7 requis"><ScanLine size={18} />Lancer un scan V7</button>
-        <ApiDependency>Endpoint de prévisualisation V7 requis</ApiDependency>
-      </section>
+      <V7MigrationWorkspace />
     </div>
   );
 }
@@ -308,7 +310,7 @@ export default function StudioPage() {
           <span className="studioAccess"><Sparkles size={16} aria-hidden="true" />Espace administrateur</span>
         </header>
 
-        <nav className="studioNav" aria-label="Sections de Nino Studio">
+        <nav className="studioNav" aria-label="Sections de Nino Studio" onKeyDown={moveStudioTabFocus}>
           {sections.map((section) => {
             const Icon = section.icon;
             return <button type="button" key={section.id} className={view === section.id ? "isActive" : undefined} onClick={() => selectView(section.id)} aria-current={view === section.id ? "page" : undefined}><Icon size={18} aria-hidden="true" /><span>{section.label}</span></button>;
@@ -321,7 +323,7 @@ export default function StudioPage() {
 
         {!loading && !error && !accessDenied && stats ? (
           <div className="studioContent">
-            <div className="studioCurrentTitle"><CurrentSectionIcon size={20} aria-hidden="true" /><h2>{currentSection.label}</h2></div>
+            {view !== "import" ? <div className="studioCurrentTitle"><CurrentSectionIcon size={20} aria-hidden="true" /><h2>{currentSection.label}</h2></div> : null}
             {view === "overview" ? (
               <div className="studioOverview">
                 <section className="studioOverviewLead">
@@ -331,7 +333,7 @@ export default function StudioPage() {
                 <div className="studioOverviewGrid">
                   <button type="button" onClick={() => selectView("schedule")}><CalendarClock size={24} /><span><strong>Programmation</strong><small>Calendrier en attente du backend</small></span><ChevronRight size={18} /></button>
                   <button type="button" onClick={() => selectView("live")}><Radio size={24} /><span><strong>Direct OBS</strong><small>Un seul flux simultané</small></span><ChevronRight size={18} /></button>
-                  <button type="button" onClick={() => selectView("administration")}><ScanLine size={24} /><span><strong>Import Nino V7</strong><small>Prévisualisation avant import</small></span><ChevronRight size={18} /></button>
+                  <button type="button" onClick={() => selectView("import")}><ScanLine size={24} /><span><strong>Import Nino V7</strong><small>Prévisualisation avant import</small></span><ChevronRight size={18} /></button>
                 </div>
                 <MediaWorkspace title="Contenus récemment chargés" description="Catalogue réel fourni par l’API V8." items={media.slice(0, 8)} createLabel="Ajouter une vidéo" />
               </div>
@@ -341,6 +343,7 @@ export default function StudioPage() {
             {view === "videos" ? <MediaWorkspace title="Gestion des vidéos" description="Tous les contenus actuellement exposés par le catalogue V8." items={media} createLabel="Ajouter une vidéo" /> : null}
             {view === "schedule" ? <ScheduleWorkspace /> : null}
             {view === "live" ? <LiveWorkspace liveItems={live} /> : null}
+            {view === "import" ? <V7ImportWorkspace /> : null}
             {view === "administration" ? <AdministrationWorkspace stats={stats} /> : null}
           </div>
         ) : null}

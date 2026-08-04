@@ -1,6 +1,6 @@
 {
   "name": "nino-frontend",
-  "version": "0.1.0",
+  "version": "8.0.0",
   "private": true,
   "scripts": {
     "dev": "node scripts/next-with-env.mjs dev",

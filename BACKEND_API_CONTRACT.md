@@ -602,6 +602,23 @@ Réponse `200` :
 
 `last_scan_at` peut être `null`. Cette route n'est pas encore affichée par le frontend actuel.
 
+### Migration V7 vers V8
+
+Routes réservées aux administrateurs :
+
+- `POST /api/v1/admin/migrations/v7/snapshots` récupère un export complet depuis LUMA V7 ;
+- `GET /api/v1/admin/migrations/v7/snapshots` liste les snapshots et leurs compteurs ;
+- `GET /api/v1/admin/migrations/v7/snapshots/{snapshot_id}` retourne le JSON V7 complet ;
+- `GET /api/v1/admin/migrations/v7/snapshots/{snapshot_id}/import-preview` prépare les vidéos et les profils de destination ;
+- `POST /api/v1/admin/migrations/v7/snapshots/{snapshot_id}/import` importe la sélection dans le catalogue V8.
+
+Nino Studio utilise ces routes pour lancer une récupération, afficher son historique,
+préparer chaque vidéo depuis `row`, `relations` et `assets`, puis effectuer un import
+additif. Chaque identifiant utilisateur V7 est associé explicitement à un profil V8
+existant ou ignoré. Les médias déjà présents sont ignorés via `v7_source_id` et les
+données sans équivalent restent archivées dans `raw_metadata`. Le token LUMA reste
+dans le `.env` du backend et ne doit jamais être envoyé au navigateur.
+
 ## Routes techniques
 
 ### `GET /health`
