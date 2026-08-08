@@ -1,0 +1,10 @@
+{
+  "name": "Nino V8",
+  "short_name": "Nino",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07100d",
+  "theme_color": "#07100d",
+  "icons": []
+}
+
