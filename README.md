@@ -86,6 +86,7 @@ npm start
 ## Routes
 
 - `/login` : connexion ;
+- `/auth/callback` : finalisation de la connexion SSO Kyros ;
 - `/profiles` : sélection du profil ;
 - `/` : accueil avec hero et rails ;
 - `/search` : recherche globale ;

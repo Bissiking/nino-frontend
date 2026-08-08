@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiResponse, HomePayload, MediaItem, NotificationItem, Profile, StreamDecision, TokenPair, User, V7ImportPreview, V7ImportResult, V7MigrationSnapshot, V7MigrationSnapshotDetail } from "@/types/nino";
+import type { ApiResponse, AuthConfig, HomePayload, MediaItem, NotificationItem, Profile, StreamDecision, TokenPair, User, V7ImportPreview, V7ImportResult, V7MigrationSnapshot, V7MigrationSnapshotDetail } from "@/types/nino";
 import { getAccessToken, redirectToLogin } from "./session";
 
 const API_URL = process.env.NEXT_PUBLIC_NINO_API_URL ?? "http://localhost:8000";
@@ -29,6 +29,7 @@ async function request<T>(path: string, init: RequestInit = {}, requiresAuth = t
   const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
       ...(!isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -48,10 +49,22 @@ async function request<T>(path: string, init: RequestInit = {}, requiresAuth = t
 }
 
 export const api = {
+  authConfig: () => request<AuthConfig>("/api/v1/auth/config", {}, false),
+  startSso: () => request<{ authorize_url: string }>("/api/v1/auth/sso/start", { method: "POST" }, false),
+  completeSso: (code: string, state: string) =>
+    request<TokenPair>("/api/v1/auth/sso/callback", {
+      method: "POST",
+      body: JSON.stringify({ code, state })
+    }, false),
   login: (identifier: string, password: string) =>
     request<TokenPair>("/api/v1/auth/login", {
       method: "POST",
       body: JSON.stringify({ username: identifier, password })
+    }, false),
+  logout: (refreshToken: string) =>
+    request<{ revoked: boolean }>("/api/v1/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refreshToken })
     }, false),
   me: () => request<User>("/api/v1/me"),
   profiles: () => request<Profile[]>("/api/v1/profiles"),

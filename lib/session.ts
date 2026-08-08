@@ -8,6 +8,10 @@ export function getAccessToken() {
   return typeof window === "undefined" ? null : window.localStorage.getItem(ACCESS_KEY);
 }
 
+export function getRefreshToken() {
+  return typeof window === "undefined" ? null : window.localStorage.getItem(REFRESH_KEY);
+}
+
 export function saveTokens(accessToken: string, refreshToken: string) {
   window.localStorage.setItem(ACCESS_KEY, accessToken);
   window.localStorage.setItem(REFRESH_KEY, refreshToken);

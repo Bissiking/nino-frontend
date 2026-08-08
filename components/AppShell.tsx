@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Clapperboard, Compass, Gamepad2, History, Home, LogOut, PanelsTopLeft, Radio, Search, UserRound, Zap } from "lucide-react";
-import { clearSession } from "@/lib/session";
+import { api } from "@/lib/api";
+import { clearSession, getRefreshToken } from "@/lib/session";
 import { TvNavigation } from "./TvNavigation";
 
 const primaryNav = [
@@ -30,6 +31,16 @@ function isActive(pathname: string, href: string) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+
+  async function logout() {
+    const refreshToken = getRefreshToken();
+    try {
+      if (refreshToken) await api.logout(refreshToken);
+    } finally {
+      clearSession();
+      router.push("/login");
+    }
+  }
 
   return (
     <div className="shell">
@@ -66,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return <Link className={`navItem ${active ? "active" : ""}`} href={item.href} key={item.label} aria-current={active ? "page" : undefined}><Icon size={20} aria-hidden="true" /><span>{item.label}</span></Link>;
           })}
         </nav>
-        <button className="navItem logoutButton" type="button" onClick={() => { clearSession(); router.push("/login"); }}>
+        <button className="navItem logoutButton" type="button" onClick={logout}>
           <LogOut size={20} aria-hidden="true" /><span>Déconnexion</span>
         </button>
       </aside>

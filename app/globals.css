@@ -276,6 +276,12 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .authPanel label { color: var(--muted); display: grid; font-size: var(--text-sm); gap: 8px; }
 .authPanel input, .searchBox input { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); min-height: 48px; padding: 0 14px; }
 .authPanel input:focus, .searchBox input:focus { border-color: var(--accent); outline: 0; }
+.authForm { display: grid; gap: 18px; }
+.authDivider { align-items: center; color: var(--muted); display: flex; font-size: var(--text-xs); gap: 12px; text-transform: uppercase; }
+.authDivider::before, .authDivider::after { background: var(--line); content: ""; flex: 1; height: 1px; }
+.authStatus { color: var(--muted); font-size: var(--text-sm); margin: 0; text-align: center; }
+.authCallbackPanel { justify-items: start; }
+.authCallbackIcon { color: var(--accent); }
 .formError { color: var(--danger); margin: 0; }
 .profileScreen { align-content: center; gap: 38px; }
 .profileHeader { display: grid; gap: 12px; justify-items: center; text-align: center; }

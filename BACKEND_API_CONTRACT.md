@@ -220,6 +220,28 @@ IDs utilisés par l'interface :
 
 ## Routes nécessaires au frontend
 
+### `GET /api/v1/auth/config`
+
+Retourne publiquement les méthodes de connexion disponibles, sans aucun secret :
+`provider`, `kyros_login_mode`, `sso_enabled` et `password_enabled`.
+
+### `POST /api/v1/auth/sso/start`
+
+Génère un `state`, le conserve dans un cookie HttpOnly signé et retourne
+`{ "authorize_url": "https://kyros.example/authorize?..." }`. Le navigateur doit
+envoyer la requête avec les credentials CORS activés.
+
+### `POST /api/v1/auth/sso/callback`
+
+Valide le cookie et le `state`, puis échange côté serveur le code Kyros :
+
+```json
+{ "code": "code-temporaire", "state": "state-retourne" }
+```
+
+Réponse `200` : même `TokenPair` que la connexion directe. Erreur principale :
+`401 AUTH_INVALID_STATE` lorsque la tentative a expiré ou a été altérée.
+
 ### `POST /api/v1/auth/login`
 
 Authentification publique.
@@ -272,6 +294,11 @@ Réponse `200` : même `TokenPair` que la connexion.
 Erreur principale : `401 INVALID_TOKEN`.
 
 Cette route existe côté backend mais le frontend ne renouvelle pas encore automatiquement sa session.
+
+### `POST /api/v1/auth/logout`
+
+Reçoit `{ "refresh_token": "..." }` et révoque le refresh token Kyros avant la
+suppression de la session locale par le frontend.
 
 ### `GET /api/v1/me`
 

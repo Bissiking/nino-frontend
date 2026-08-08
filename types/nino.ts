@@ -14,6 +14,13 @@ export type TokenPair = {
   token_type: "bearer";
 };
 
+export type AuthConfig = {
+  provider: "local" | "kyros" | "hybrid" | string;
+  kyros_login_mode: "sso" | "direct" | "hybrid" | null;
+  sso_enabled: boolean;
+  password_enabled: boolean;
+};
+
 export type User = {
   id: string;
   email: string;

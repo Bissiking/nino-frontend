@@ -6,7 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Nino V8",
   description: "Plateforme personnelle de streaming video",
-  manifest: "/manifest.webmanifest"
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/logo_nino_small.png",
+    apple: "/logo_nino_small.png"
+  }
 };
 
 export const viewport: Viewport = {
