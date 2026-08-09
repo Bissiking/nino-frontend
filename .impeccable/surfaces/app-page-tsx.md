@@ -2,7 +2,7 @@
 version: 1
 slug: "app-page-tsx"
 primary_target: "app/page.tsx"
-related_targets: ["app/flashy/page.tsx","components/AppShell.tsx","components/HeroConsole.tsx","components/HomeTopTen.tsx","components/CategoryStrip.tsx","components/Rail.tsx","components/MediaCard.tsx","app/globals.css"]
+related_targets: ["app/flashy/page.tsx","components/AppShell.tsx","components/ProfileMenu.tsx","components/HeroConsole.tsx","components/HomeTopTen.tsx","components/CategoryStrip.tsx","components/Rail.tsx","components/MediaCard.tsx","app/globals.css"]
 ---
 
 ## Scope and mode
@@ -17,16 +17,17 @@ related_targets: ["app/flashy/page.tsx","components/AppShell.tsx","components/He
 
 ## Approved direction
 
-- Choix explicite de l'utilisateur : standard streaming assumé.
-- Navigation inspirée des repères YouTube, hero cinématographique de type Netflix, Top 10 horizontal de type Prime Video et flux Flashy vertical de type Shorts/TikTok/Reels.
-- Palette issue des logos officiels : fond prune presque noir, corail et orange.
+- Choix explicite de l'utilisateur : retour à l’ancienne DA Nino disponible dans `.backup`, sobre et proche des conventions Netflix.
+- Header horizontal minimal, hero cinématographique, rails simples et flux Flashy vertical.
+- Palette historique : noir neutre et dégradé corail–orange du logo.
+- Exception explicite : conserver sans changement le Top 10 de la refonte V8.
 - Validation visuelle : `.impeccable/screenshots/home-desktop.png`, `.impeccable/screenshots/home-mobile.png`, `.impeccable/screenshots/flashy-desktop.png`, `.impeccable/screenshots/flashy-mobile.png`.
 
 ## Implementation inventory
 
 | Élément | Engagement de composition | Médium |
 | --- | --- | --- |
-| Navigation | barre supérieure avec recherche, rail latéral desktop, barre basse mobile | HTML/CSS + Lucide |
+| Navigation | header horizontal desktop, actions compactes et barre basse mobile | HTML/CSS + Lucide |
 | Marque | logos Nino complets et compacts | assets existants `public/` |
 | Hero | image plein cadre, scrims fonctionnels, titre et actions au premier plan | image API + HTML/CSS |
 | Top 10 | grands chiffres corail et affiches classées horizontalement | données API + HTML/CSS |

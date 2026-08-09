@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiResponse, AuthConfig, HomePayload, MediaItem, NotificationItem, Profile, StreamDecision, TokenPair, User, V7ImportPreview, V7ImportResult, V7MigrationSnapshot, V7MigrationSnapshotDetail } from "@/types/nino";
+import type { ApiResponse, AuthConfig, HomePayload, MediaItem, MediaWritePayload, NotificationItem, Profile, StorageIndexReport, StreamDecision, TokenPair, User } from "@/types/nino";
 import { getAccessToken, redirectToLogin } from "./session";
 
 const API_URL = process.env.NEXT_PUBLIC_NINO_API_URL ?? "http://localhost:8000";
@@ -104,18 +104,26 @@ export const api = {
     request<NotificationItem[]>(`/api/v1/notifications${profileId ? `?profile_id=${profileId}` : ""}`),
   adminStats: () =>
     request<{ users: number; libraries: number; media: number; transcode_jobs: number; scan_jobs: number }>("/api/v1/admin/stats"),
-  createV7MigrationSnapshot: () =>
-    request<V7MigrationSnapshot>("/api/v1/admin/migrations/v7/snapshots", { method: "POST" }),
-  v7MigrationSnapshots: () =>
-    request<V7MigrationSnapshot[]>("/api/v1/admin/migrations/v7/snapshots"),
-  v7MigrationSnapshot: (snapshotId: string) =>
-    request<V7MigrationSnapshotDetail>(`/api/v1/admin/migrations/v7/snapshots/${encodeURIComponent(snapshotId)}`),
-  v7ImportPreview: (snapshotId: string) =>
-    request<V7ImportPreview>(`/api/v1/admin/migrations/v7/snapshots/${encodeURIComponent(snapshotId)}/import-preview`),
-  importV7Videos: (snapshotId: string, videoIds: string[], profileMappings: Record<string, string>) =>
-    request<V7ImportResult>(`/api/v1/admin/migrations/v7/snapshots/${encodeURIComponent(snapshotId)}/import`, {
-      method: "POST",
-      body: JSON.stringify({ video_ids: videoIds, profile_mappings: profileMappings, conflict_strategy: "skip" })
+  adminMedia: () => request<MediaItem[]>("/api/v1/admin/media"),
+  indexMediaStorage: () => request<StorageIndexReport>("/api/v1/admin/media/index-storage", { method: "POST" }),
+  adminMediaDetail: (mediaId: string) =>
+    request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}`),
+  adminMediaStreamDecision: (mediaId: string) =>
+    request<StreamDecision>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}/stream-decision`),
+  createAdminMedia: (payload: MediaWritePayload & { source_mode: "file" | "hls" }, files: File[]) => {
+    const form = new FormData();
+    form.append("payload", JSON.stringify(payload));
+    files.forEach((file) => {
+      const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+      form.append("files", file, file.name);
+      form.append("asset_paths", relativePath);
+    });
+    return request<MediaItem>("/api/v1/admin/media", { method: "POST", body: form });
+  },
+  updateAdminMedia: (mediaId: string, payload: MediaWritePayload) =>
+    request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
     }),
   assetUrl: (path: string | null) => {
     if (!path) return null;

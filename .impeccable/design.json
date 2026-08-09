@@ -1,23 +1,40 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-03T16:20:57Z",
+  "generatedAt": "2026-08-09T00:00:00+02:00",
   "title": "Design System: Nino Frontend",
   "extensions": {
     "colorMeta": {
-      "viewing-room": { "role": "neutral", "displayName": "Viewing Room", "canonical": "#0d0b0f" },
-      "coral": { "role": "primary", "displayName": "Nino Coral", "canonical": "#ff5264" },
-      "orange": { "role": "secondary", "displayName": "Nino Orange", "canonical": "#ff8128" }
+      "viewing-room": { "role": "neutral", "displayName": "Nino Black", "canonical": "#0f0f0f" },
+      "viewing-room-deep": { "role": "neutral", "displayName": "Deep Black", "canonical": "#080808" },
+      "surface": { "role": "neutral", "displayName": "Surface", "canonical": "#1a1a1a" },
+      "surface-raised": { "role": "neutral", "displayName": "Raised Surface", "canonical": "#242424" },
+      "surface-hover": { "role": "neutral", "displayName": "Hover Surface", "canonical": "#303030" },
+      "ink": { "role": "neutral", "displayName": "White", "canonical": "#ffffff" },
+      "muted": { "role": "neutral", "displayName": "Muted", "canonical": "#bfbfbf" },
+      "coral": { "role": "primary", "displayName": "Nino Coral", "canonical": "#e94b3c" },
+      "orange": { "role": "secondary", "displayName": "Nino Orange", "canonical": "#f17c58" },
+      "success": { "role": "tertiary", "displayName": "Success Green", "canonical": "#61d99c" },
+      "warning": { "role": "tertiary", "displayName": "Warning Amber", "canonical": "#ffc266" },
+      "info": { "role": "tertiary", "displayName": "Information Blue", "canonical": "#7cc7ff" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Titres de hero cinématographiques." },
+      "body": { "displayName": "Body", "purpose": "Synopsis et textes fonctionnels." },
+      "label": { "displayName": "Label", "purpose": "Métadonnées, statuts et navigation Operate compacte." }
     },
     "shadows": [
-      { "name": "media-lift", "value": "0 18px 38px rgba(0, 0, 0, 0.38)", "purpose": "Réponse au survol et au focus des médias." },
-      { "name": "ambient", "value": "0 24px 70px rgba(0, 0, 0, 0.38)", "purpose": "Séparation des panneaux majeurs." }
+      { "name": "media-lift", "value": "0 18px 38px rgba(0, 0, 0, 0.38)", "purpose": "Réponse au survol et au focus des médias de visionnage." },
+      { "name": "ambient", "value": "0 24px 70px rgba(0, 0, 0, 0.38)", "purpose": "Séparation des panneaux majeurs hors surfaces Operate plates." }
     ],
     "motion": [
-      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Révélation du hero et mouvements d’interaction." }
+      { "name": "duration-fast", "value": "140ms", "purpose": "Transitions d’état des contrôles." },
+      { "name": "duration-standard", "value": "240ms", "purpose": "Transitions de surface." },
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Révélation du hero et changement de file mobile." }
     ],
     "breakpoints": [
       { "name": "mobile", "value": "760px" },
       { "name": "compact-tv", "value": "1100px" },
+      { "name": "studio-compact", "value": "1320px" },
       { "name": "wide", "value": "1600px" }
     ]
   },
@@ -26,26 +43,80 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Action de lecture principale, corail et lisible à distance.",
-      "html": "<button class=\"ds-btn-primary\">Regarder</button>",
-      "css": ".ds-btn-primary{background:#ff5264;color:#1b080c;border:0;border-radius:10px;min-height:48px;padding:0 20px;font:800 1rem 'Sora Variable',Helvetica,Arial,sans-serif}.ds-btn-primary:hover{background:#ff7280}.ds-btn-primary:focus-visible{outline:3px solid #ff8128;outline-offset:4px}"
+      "description": "Action principale corail, lisible à distance comme dans une barre de commande compacte.",
+      "html": "<button class=\"ds-btn-primary\">Nouvelle vidéo</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;border:0;border-radius:10px;background:#ff5264;color:#1b080c;font:800 1rem 'Sora Variable','Helvetica Neue',Helvetica,Arial,sans-serif}.ds-btn-primary:hover{background:#ff7280}.ds-btn-primary:focus-visible{outline:3px solid #ff8128;outline-offset:4px}.ds-btn-primary:active{background:#ff4359}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Action secondaire posée sur une surface ou une image sombre.",
+      "html": "<button class=\"ds-btn-secondary\">Rafraîchir</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;border:0;border-radius:10px;background:rgba(255,248,244,.16);color:#fff8f4;font:800 1rem 'Sora Variable','Helvetica Neue',Helvetica,Arial,sans-serif}.ds-btn-secondary:hover{background:rgba(255,248,244,.25)}.ds-btn-secondary:focus-visible{outline:3px solid #ff8128;outline-offset:4px}.ds-btn-secondary:active{background:rgba(255,248,244,.12)}"
     },
     {
       "name": "Navigation Item",
       "kind": "nav",
-      "description": "Destination de la sidebar avec état actif tonal.",
-      "html": "<a class=\"ds-nav-item\" href=\"#\">Accueil</a>",
-      "css": ".ds-nav-item{display:flex;align-items:center;min-height:46px;padding:0 13px;background:#242026;color:#fff8f4;border-radius:10px;font:700 1rem 'Sora Variable',Helvetica,Arial,sans-serif}.ds-nav-item:hover{background:#302a32}.ds-nav-item:focus-visible{outline:3px solid #ff8128;outline-offset:4px}"
+      "description": "Destination compacte avec état actif tonal et signal corail.",
+      "html": "<button class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" aria-hidden=\"true\"><path d=\"M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg><span>Tableau éditorial</span></button>",
+      "css": ".ds-nav-item{display:flex;align-items:center;gap:11px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:#242026;color:#fff8f4;font:750 .9rem 'Sora Variable','Helvetica Neue',Helvetica,Arial,sans-serif;text-align:left}.ds-nav-item svg{color:#ff5264}.ds-nav-item:hover{background:#302a32}.ds-nav-item:focus-visible{outline:3px solid #ff8128;outline-offset:4px}.ds-nav-item:active{background:#18151a}"
+    },
+    {
+      "name": "Operate Search Field",
+      "kind": "input",
+      "refersTo": "field-operate",
+      "description": "Recherche Studio plate et compacte, bordée discrètement.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"m20 20-3.5-3.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg><input placeholder=\"Rechercher un titre\" /></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 13px;border:1px solid rgba(255,244,238,.12);border-radius:10px;background:#18151a;color:#b9adb7;font:400 .9rem 'Sora Variable','Helvetica Neue',Helvetica,Arial,sans-serif}.ds-search input{min-width:0;width:100%;border:0;outline:0;background:transparent;color:#fff8f4;font:inherit}.ds-search:hover{background:#242026}.ds-search:focus-within{border-color:#ff5264;outline:3px solid #ff8128;outline-offset:2px}"
+    },
+    {
+      "name": "Published Status",
+      "kind": "chip",
+      "refersTo": "status-published",
+      "description": "Statut éditorial compact dont la couleur complète toujours le libellé.",
+      "html": "<span class=\"ds-status-published\"><i aria-hidden=\"true\"></i>Publique</span>",
+      "css": ".ds-status-published{display:inline-flex;align-items:center;gap:6px;min-height:25px;width:max-content;padding:0 7px;border-radius:6px;background:rgba(97,217,156,.12);color:#8de9ba;font:750 .68rem 'Sora Variable','Helvetica Neue',Helvetica,Arial,sans-serif}.ds-status-published i{width:6px;height:6px;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "Editorial Queue Row",
+      "kind": "custom",
+      "description": "Ligne dense qui localise un média et mène à son édition.",
+      "html": "<a class=\"ds-queue-row\" href=\"#\"><span class=\"ds-queue-art\"></span><span class=\"ds-queue-copy\"><strong>Épisode pilote</strong><small>Vidéo · HLS</small><span>Publique · Disponible</span></span><span class=\"ds-queue-arrow\" aria-hidden=\"true\">›</span></a>",
+      "css": ".ds-queue-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:92px;padding:11px 12px;background:#18151a;color:#fff8f4;text-decoration:none;font-family:'Sora Variable','Helvetica Neue',Helvetica,Arial,sans-serif}.ds-queue-art{width:62px;aspect-ratio:16/9;border-radius:8px;background:linear-gradient(135deg,#302a32,#0d0b0f)}.ds-queue-copy{display:grid;gap:5px;min-width:0}.ds-queue-copy strong{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-queue-copy small,.ds-queue-copy span{color:#b9adb7;font-size:.7rem}.ds-queue-arrow{color:#b9adb7;font-size:1.35rem}.ds-queue-row:hover{background:#242026}.ds-queue-row:focus-visible{outline:3px solid #ff8128;outline-offset:-4px}.ds-queue-row:active{background:#302a32}"
     }
   ],
   "narrative": {
-    "northStar": "La salle de diffusion Nino",
-    "overview": "Une expérience de streaming personnelle sombre, chaleureuse et centrée sur les créations, conçue d’abord pour la télévision.",
-    "keyCharacteristics": ["hero cinématographique", "navigation vidéo compacte", "Top 10 chiffré", "accents corail et orange", "focus télécommande visible"],
-    "rules": [
-      { "name": "The Signal Rule", "body": "Le corail indique l’action ou la marque ; l’orange indique le focus ou le rang.", "section": "colors" }
+    "northStar": "Nino, simplement",
+    "overview": "Nino revient à sa direction historique sobre et familière : noir neutre, header horizontal, hero plein écran et rails simples portés par les images. Le dégradé corail-orange reste un signal de marque ponctuel. Le Top 10 V8 est conservé sans modification. Les surfaces Operate, dont Nino Studio, reprennent ces tons neutres tout en gardant leur structure fonctionnelle.",
+    "keyCharacteristics": [
+      "hero éditorial immersif et image-led",
+      "header horizontal minimal sur desktop, barre inférieure sur mobile",
+      "classement Top 10 à chiffres contour corail",
+      "surfaces noires neutres, dégradé historique corail-orange",
+      "focus blanc très visible",
+      "grammaire Operate compacte pour les outils éditoriaux, structurée par files et lignes plutôt que par cartes"
     ],
-    "dos": ["Laisser les visuels du catalogue porter l’atmosphère.", "Maintenir des cibles de 42 à 48px minimum."],
-    "donts": ["Réintroduire le vert phosphore.", "Encadrer chaque contenu média dans un panneau." ]
+    "rules": [
+      { "name": "The V7 Migration Rule", "body": "Toute surface existante revient d’abord à sa composition et à ses comportements V7. Les step-ups visuels sont ensuite introduits explicitement et localement ; V8 désigne d’abord l’architecture indépendante et son backend.", "section": "layout" },
+      { "name": "The Signal Rule", "body": "Le corail indique l’action ou la marque ; l’orange attire l’attention sur le focus et les informations de rang, jamais sur de grandes surfaces décoratives.", "section": "colors" },
+      { "name": "The Operate Board Rule", "body": "Une surface éditoriale doit donner une position et une prochaine action aux objets réels ; elle ne résume pas le travail en mosaïque de cartes statistiques.", "section": "layout" }
+    ],
+    "dos": [
+      "Do laisser les visuels réels du catalogue porter l’atmosphère.",
+      "Do garder les cibles d’action à au moins 42–48px.",
+      "Do vérifier le focus clavier et télécommande sur chaque lien interactif.",
+      "Do conserver les états chargement, vide, erreur et connexion perdue.",
+      "Do garder les surfaces Operate compactes, plates et orientées vers une action vérifiable.",
+      "Do dériver les files et statuts éditoriaux des contrats réels plutôt que d’ajouter des métriques de démonstration."
+    ],
+    "donts": [
+      "Don't réintroduire le vert phosphore de l’ancien univers signal-console.",
+      "Don't empiler des panneaux encadrés autour des contenus média.",
+      "Don't masquer la navigation principale derrière un menu sur télévision.",
+      "Don't utiliser corail et orange comme remplissage décoratif simultané.",
+      "Don't transformer une régie éditoriale en dashboard de cartes quand les objets doivent être localisés et traités.",
+      "Don't simuler une activité, une progression ou un contrôle système que l’API n’expose pas."
+    ]
   }
 }

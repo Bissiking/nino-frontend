@@ -37,8 +37,11 @@ L'utilisateur choisit un profil, découvre les programmes mis en avant, parcourt
 - nom de marque : Nino ;
 - logos officiels : `public/logo_nino.png` et `public/logo_nino_small.png` ;
 - la direction artistique doit être construite à partir des couleurs corail et orange du logo ;
-- l'expérience attendue combine une navigation familière de plateforme vidéo, un hero éditorial immersif, des classements Top 10, des catégories et un espace Flashy distinct.
-- le standard des plateformes vidéo doit être assumé : YouTube sert de référence pour la navigation, Netflix pour le hero, Prime Video pour le Top 10 et TikTok/Reels pour l'expérience Flashy ;
+- la migration V8 conserve en priorité l’interface et les parcours de Nino V7 disponibles dans `.backup` ;
+- les évolutions visuelles se feront ensuite progressivement, surface par surface, sans révolution globale implicite ;
+- l’indépendance du frontend et le nouveau backend performant constituent la rupture V8 ; l’apparence n’a pas à matérialiser cette rupture ;
+- la section Top 10 de V8 est l’unique exception actuellement conservée à la direction V7 ;
+- l’expérience attendue combine une navigation familière de plateforme vidéo, un hero éditorial immersif, des classements Top 10, des catégories et un espace Flashy distinct ;
 
 ## Evidence on Hand
 

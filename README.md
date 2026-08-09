@@ -91,6 +91,9 @@ npm start
 - `/` : accueil avec hero et rails ;
 - `/search` : recherche globale ;
 - `/watch/[id]` : surface lecteur ;
+- `/flashy` : flux de formats courts ;
+- `/studio` : ajout et édition des vidéos, Flashy et paquets HLS multi-qualités ;
+- `/studio/media/[id]` : édition complète, publication et prévisualisation administrateur d’un média ;
 - `/admin` : supervision initiale.
 
 ## Vérifications qualité

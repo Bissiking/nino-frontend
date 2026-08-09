@@ -49,6 +49,47 @@ export type MediaItem = {
   rating: number | null;
   is_available: boolean;
   progress_percent: number;
+  visibility: "public" | "private" | "draft" | string;
+  publish_at: string | null;
+  source_kind: "file" | "hls" | null;
+  source_filename: string | null;
+  file_size_bytes: number | null;
+  source_origin: "upload" | "luma_storage" | string | null;
+  hls_variants: HlsVariant[];
+};
+
+export type HlsVariant = {
+  path: string;
+  label: string;
+  resolution: number | null;
+  width: number | null;
+  height: number | null;
+  fps: number | null;
+  bandwidth: number | null;
+  segments_count: number;
+  size_bytes: number;
+};
+
+export type StorageIndexReport = {
+  discovered: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: Array<{ media_id: string; message: string }>;
+};
+
+export type MediaWritePayload = {
+  kind: "movie" | "short";
+  title: string;
+  synopsis: string;
+  year: number | null;
+  duration_seconds: number;
+  genres: string[];
+  poster_url: string | null;
+  backdrop_url: string | null;
+  visibility: string;
+  publish_at: string | null;
+  is_available: boolean;
 };
 
 export type HomeRail = {
@@ -78,67 +119,4 @@ export type NotificationItem = {
   level: string;
   is_read: boolean;
   created_at: string;
-};
-
-export type V7MigrationSnapshot = {
-  id: string;
-  status: "pending" | "ready" | "failed" | string;
-  source_url: string;
-  source_version: string | null;
-  table_count: number;
-  row_count: number;
-  video_count: number;
-  error_code: string | null;
-  error_message: string | null;
-  created_at: string | null;
-  completed_at: string | null;
-};
-
-export type V7MigrationSnapshotDetail = V7MigrationSnapshot & {
-  payload: unknown | null;
-};
-
-export type V7ImportVideo = {
-  source_id: string;
-  status: "ready" | "existing" | "invalid" | string;
-  title: string;
-  description: string;
-  legacy_user_id: string | null;
-  series_source_id: string | null;
-  season_number: number | null;
-  episode_number: number | null;
-  duration_seconds: number;
-  publish_at: string | null;
-  visibility: string;
-  encoding_status: string | null;
-  hls_status: string | null;
-  has_subtitles: boolean;
-  source_path: string | null;
-  width: number | null;
-  height: number | null;
-  fps: number | null;
-  warnings: string[];
-};
-
-export type V7ImportUser = {
-  id: string;
-  email: string;
-  display_name: string;
-  profiles: Profile[];
-};
-
-export type V7ImportPreview = {
-  snapshot_id: string;
-  source_version: string | null;
-  videos: V7ImportVideo[];
-  legacy_user_ids: string[];
-  users: V7ImportUser[];
-  counts: { total: number; ready: number; existing: number; invalid: number };
-};
-
-export type V7ImportResult = {
-  snapshot_id: string;
-  imported: Array<{ source_id: string; media_id: string; title: string }>;
-  skipped: Array<{ source_id: string; reason: string; media_id: string }>;
-  counts: { requested: number; imported: number; skipped: number; progress: number; favorites: number };
 };

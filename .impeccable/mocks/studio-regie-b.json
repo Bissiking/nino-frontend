@@ -1,0 +1,8 @@
+{
+  "approved": true,
+  "seed_key": "20ef57dd",
+  "surface": "app/studio/page.tsx",
+  "concept": "Tableau éditorial à trois files",
+  "prompt": "High-fidelity desktop web app UI composition for Nino Studio: persistent Studio navigation, top operational command bar, and a wide three-lane editorial board À préparer, Programmé, Publié using dense horizontal media records. Existing Nino dark plum palette, coral actions, orange focus, compact Sora typography, flat bounded regions, no fake analytics.",
+  "implementation_notes": "La composition est approuvée comme north star. Les auteurs, vues, commentaires, playlists et états de validation visibles dans le mock ne sont pas littéralisés faute de contrat V8."
+}

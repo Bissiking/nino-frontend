@@ -2,6 +2,14 @@
 
 Ce document peut être transmis tel quel à Codex dans le dépôt backend.
 
+## Stockage HLS LUMA
+
+- `POST /api/v1/admin/media/index-storage` analyse le dossier configuré par `NINO_MEDIA_DIR`.
+- Les dossiers conservent leur UUID média et leurs variantes sous la forme `<résolution>p_<fps>fps/index.m3u8` avec leurs segments.
+- La réponse contient `discovered`, `created`, `updated`, `skipped` et `errors`.
+- Les objets média administrateur exposent `source_origin` et `hls_variants` (`path`, `label`, `resolution`, `width`, `height`, `fps`, `bandwidth`, `segments_count`, `size_bytes`).
+- Une playlist maître est produite virtuellement lorsque l'ancien stockage n'en contient pas.
+
 Il décrit :
 
 - le contrat réellement consommé par le frontend Nino ;
@@ -46,7 +54,7 @@ Règles de versionnement :
 Version initiale demandée pour la livraison :
 
 ```python
-FastAPI(title="Nino Backend", version="8.0.0", openapi_url="/api/v1/openapi.json")
+FastAPI(title="Nino Backend", version="8.1.0", openapi_url="/api/v1/openapi.json")
 ```
 
 ## Règles globales
@@ -629,22 +637,25 @@ Réponse `200` :
 
 `last_scan_at` peut être `null`. Cette route n'est pas encore affichée par le frontend actuel.
 
-### Migration V7 vers V8
+### Administration des médias
 
 Routes réservées aux administrateurs :
 
-- `POST /api/v1/admin/migrations/v7/snapshots` récupère un export complet depuis LUMA V7 ;
-- `GET /api/v1/admin/migrations/v7/snapshots` liste les snapshots et leurs compteurs ;
-- `GET /api/v1/admin/migrations/v7/snapshots/{snapshot_id}` retourne le JSON V7 complet ;
-- `GET /api/v1/admin/migrations/v7/snapshots/{snapshot_id}/import-preview` prépare les vidéos et les profils de destination ;
-- `POST /api/v1/admin/migrations/v7/snapshots/{snapshot_id}/import` importe la sélection dans le catalogue V8.
+- `GET /api/v1/admin/media` liste tous les médias, y compris brouillons et privés ;
+- `GET /api/v1/admin/media/{media_id}` retourne un média, y compris brouillon ou privé ;
+- `GET /api/v1/admin/media/{media_id}/stream-decision` retourne une URL signée de prévisualisation administrateur ;
+- `POST /api/v1/admin/media` crée une fiche et envoie sa source en `multipart/form-data` ;
+- `PATCH /api/v1/admin/media/{media_id}` met à jour les métadonnées et la publication.
 
-Nino Studio utilise ces routes pour lancer une récupération, afficher son historique,
-préparer chaque vidéo depuis `row`, `relations` et `assets`, puis effectuer un import
-additif. Chaque identifiant utilisateur V7 est associé explicitement à un profil V8
-existant ou ignoré. Les médias déjà présents sont ignorés via `v7_source_id` et les
-données sans équivalent restent archivées dans `raw_metadata`. Le token LUMA reste
-dans le `.env` du backend et ne doit jamais être envoyé au navigateur.
+La création contient un champ `payload` JSON, des champs `files` répétés et un
+`asset_paths` pour chaque fichier. `source_mode=file` accepte une vidéo unique.
+`source_mode=hls` exige les playlists `.m3u8` et les segments `.ts` ou `.m4s` du
+dossier complet. Le backend valide tous les chemins et toutes les références avant
+de publier le paquet de façon atomique.
+
+`GET /api/v1/stream/{media_id}/decision` retourne une URL signée temporaire. Pour
+HLS, le backend réécrit les références des playlists afin de protéger également les
+sous-playlists et segments sans exposer le stockage directement.
 
 ## Routes techniques
 
@@ -658,7 +669,7 @@ Publique, sans authentification.
   "data": {
     "status": "ok",
     "service": "nino-backend",
-    "version": "8.0.0"
+    "version": "8.1.0"
   },
   "meta": {}
 }

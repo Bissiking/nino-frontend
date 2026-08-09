@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
-import { Captions, Gauge, Play, Radio, RotateCw, Volume2 } from "lucide-react";
+import { Captions, Gauge, Radio, RotateCw, Volume2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { MediaPlayer } from "@/components/MediaPlayer";
 import { ErrorState, LoadingState } from "@/components/StateBlock";
 import { api } from "@/lib/api";
 import { getProfileId } from "@/lib/session";
@@ -39,17 +39,7 @@ export default function WatchPage() {
       {!loading && !error && media ? (
         <section className="watchSurface">
           <div className="playerDeck">
-            {media.backdrop_url ? <Image src={media.backdrop_url} fill alt="" className="playerBackdrop" /> : null}
-            <div className="playhead">
-              <button className="playButton" type="button" aria-label="Lire">
-                <Play size={34} fill="currentColor" aria-hidden="true" />
-              </button>
-              <div className="waveform" aria-hidden="true">
-                {Array.from({ length: 34 }).map((_, index) => (
-                  <span key={index} style={{ height: `${24 + ((index * 17) % 58)}%` }} />
-                ))}
-              </div>
-            </div>
+            {decision ? <MediaPlayer decision={decision} poster={media.backdrop_url ?? media.poster_url} autoPlay /> : null}
           </div>
           <div className="watchMeta">
             <div>
@@ -72,4 +62,3 @@ export default function WatchPage() {
     </AppShell>
   );
 }
-

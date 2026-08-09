@@ -10,9 +10,8 @@ export function HeroConsole({ item }: { item: MediaItem | null }) {
 
   return (
     <section className="heroConsole" aria-labelledby="hero-title">
-      {item.backdrop_url ? <Image src={item.backdrop_url} alt="" fill priority sizes="(max-width: 900px) 100vw, calc(100vw - 232px)" className="heroBackdrop" /> : null}
+      {item.backdrop_url ? <Image src={item.backdrop_url} alt="" fill priority sizes="100vw" className="heroBackdrop" /> : null}
       <div className="heroContent">
-        <div className="ninoOriginal"><Image src="/logo_nino_small.png" alt="" width={18} height={22} /> Original</div>
         <h1 id="hero-title">{item.title}</h1>
         <div className="heroFacts">
           {item.rating ? <strong>{item.rating}/10</strong> : null}
