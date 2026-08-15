@@ -202,6 +202,7 @@ Contraintes attendues :
 - `genres` est toujours un tableau, éventuellement vide ;
 - `duration_seconds >= 0` ;
 - `progress_percent` est compris entre `0` et `100` ;
+- `position_seconds` (optionnel) : position de reprise en secondes, renseignée pour les items du rail `continue` ;
 - les URLs d'images doivent être directement accessibles par Next Image ou provenir d'un domaine autorisé côté frontend.
 
 ### HomeRail
@@ -393,9 +394,9 @@ Réponse `200` :
 
 Règles :
 
-- `hero` peut être `null` si le catalogue est vide ;
+- `hero` peut être `null` si le catalogue est vide ; il privilégie le média en cours de lecture le plus récent, sinon le dernier ajout ;
 - `top10.items` contient au maximum 10 médias disponibles, triés par note décroissante puis date d'ajout décroissante ;
-- `continue.items` contient uniquement les médias dont `progress_percent > 0` ;
+- `continue` est le rail "Reprendre" : contient les médias du profil dont `0 < progress_percent < 95`, triés par date de dernier visionnage décroissante ; chaque item expose `position_seconds` (position de reprise en secondes) ;
 - le progrès doit être celui du profil demandé ;
 - les rails connus doivent être retournés avec `items: []` lorsqu'ils sont vides ;
 - ne jamais exposer la progression d'un autre profil.
@@ -645,7 +646,15 @@ Routes réservées aux administrateurs :
 - `GET /api/v1/admin/media/{media_id}` retourne un média, y compris brouillon ou privé ;
 - `GET /api/v1/admin/media/{media_id}/stream-decision` retourne une URL signée de prévisualisation administrateur ;
 - `POST /api/v1/admin/media` crée une fiche et envoie sa source en `multipart/form-data` ;
-- `PATCH /api/v1/admin/media/{media_id}` met à jour les métadonnées et la publication.
+- `PATCH /api/v1/admin/media/{media_id}` met à jour les métadonnées et la publication ;
+- `POST /api/v1/admin/media/{media_id}/image` uploade une image (`multipart/form-data`, champ `field` + fichier `file`) ;
+- `DELETE /api/v1/admin/media/{media_id}/image?field={field}` retire une image.
+
+Les champs images acceptés par les routes image sont `thumbnail`, `thumbnail_vertical`,
+`poster` et `backdrop`. Les fichiers doivent être JPEG, PNG ou WebP (vérifiés par
+signature binaire) et sont servis statiquement sous `/media-images/{fichier}`. Les URLs
+relative sont résolues côté frontend via `api.assetUrl`. Le remplacement d'une image
+supprime l'ancien fichier, et `DELETE` supprime le fichier du disque.
 
 La création contient un champ `payload` JSON, des champs `files` répétés et un
 `asset_paths` pour chaque fichier. `source_mode=file` accepte une vidéo unique.
@@ -656,6 +665,26 @@ de publier le paquet de façon atomique.
 `GET /api/v1/stream/{media_id}/decision` retourne une URL signée temporaire. Pour
 HLS, le backend réécrit les références des playlists afin de protéger également les
 sous-playlists et segments sans exposer le stockage directement.
+
+Un média `source_mode="file"` est enregistré avec `encoding_status="pending"` et un
+job de transcodage est inséré. La vidéo est lisible en `direct_play` (source brute)
+tant que le job n'est pas terminé. Le worker (`worker.py`, process séparé) transcodifie
+en HLS multi-qualités pendant une fenêtre horaire configurable (nuit par défaut), puis
+bascule `source_kind="hls"`, `source_path="master.m3u8"` et `encoding_status="ready"`.
+
+Champs de statut exposés sur les médias :
+- `encoding_status`: `pending | running | ready | failed | null` ;
+- `hls_status`: `ready | null`.
+
+Qualités ABR : 1080p/720p/480p (plafonnées à la résolution source), FPS 60 si la
+source est en 60 fps sinon 30. Pour les vidéos verticales (9:16), une seule qualité
+est générée (la plus haute ≤ source) afin d'éviter les upscales inutiles.
+
+Endpoints administration du transcodage :
+- `GET /api/v1/admin/transcode/window` lit la fenêtre effective (`start`, `end`, `source`) ;
+- `PUT /api/v1/admin/transcode/window` {`start`, `end`} définit la fenêtre runtime (pilotable par Aion ou un Admin) ;
+- `DELETE /api/v1/admin/transcode/window` réinitialise à la config ;
+- `GET /api/v1/admin/transcode/jobs` liste les 100 derniers jobs.
 
 ## Routes techniques
 

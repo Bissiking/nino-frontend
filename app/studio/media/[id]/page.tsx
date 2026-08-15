@@ -65,7 +65,7 @@ export default function StudioMediaEditPage() {
       {!loading && !error && !accessDenied && media ? (
         <MediaEditor
           variant="page"
-          kind={media.kind === "short" ? "short" : "movie"}
+          kind={media.kind === "short" ? "short" : media.kind === "series" ? "series" : "movie"}
           media={media}
           decision={decision}
           previewError={previewError}

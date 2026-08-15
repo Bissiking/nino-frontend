@@ -2,15 +2,19 @@
 
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   CalendarClock,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   CircleOff,
   Clapperboard,
   Database,
   Film,
+  GripVertical,
   LayoutDashboard,
   ListFilter,
   ListVideo,
@@ -18,6 +22,7 @@ import {
   Plus,
   Radio,
   RefreshCw,
+  Save,
   ScanLine,
   Search,
   Settings,
@@ -28,11 +33,13 @@ import { AppShell } from "@/components/AppShell";
 import { ErrorState } from "@/components/StateBlock";
 import { MediaEditor } from "@/components/studio/MediaEditor";
 import { api } from "@/lib/api";
-import type { MediaItem, StorageIndexReport } from "@/types/nino";
+import { VISIBILITY_LABELS } from "@/types/nino";
+import type { AdminEpisodes, MediaItem, StorageIndexReport } from "@/types/nino";
 
 type StudioView = "overview" | "videos" | "series" | "flashy" | "schedule" | "live" | "administration";
 type EditorialLane = "prepare" | "scheduled" | "published";
 type VisibilityFilter = "all" | "public" | "private" | "draft";
+type CreateKind = "movie" | "short" | "series";
 
 type Stats = {
   users: number;
@@ -81,8 +88,7 @@ function kindLabel(kind: string) {
 }
 
 function visibilityLabel(visibility: string) {
-  const labels: Record<string, string> = { public: "Publique", private: "Privée", draft: "Brouillon" };
-  return labels[visibility] ?? visibility;
+  return VISIBILITY_LABELS[visibility] ?? visibility;
 }
 
 function formatPublishDate(value: string | null, compact = false) {
@@ -104,6 +110,20 @@ function sourceLabel(item: MediaItem) {
   return "Sans source";
 }
 
+function transcodeLabel(item: MediaItem): { text: string; cls: string } | null {
+  if (item.source_kind === "hls" && item.hls_status === "ready") return null;
+  switch (item.encoding_status) {
+    case "pending":
+      return { text: "Transcode en attente", cls: "isPending" };
+    case "running":
+      return { text: "En transcode", cls: "isRunning" };
+    case "failed":
+      return { text: "Transcode échoué", cls: "isFailed" };
+    default:
+      return null;
+  }
+}
+
 function laneFor(item: MediaItem, now: number): EditorialLane {
   const publication = item.publish_at ? new Date(item.publish_at).getTime() : 0;
   if (publication > now) return "scheduled";
@@ -116,8 +136,9 @@ function LoadingStudio() {
 }
 
 function MediaArtwork({ item }: { item: MediaItem }) {
-  const style = item.poster_url ? { backgroundImage: `url(${JSON.stringify(item.poster_url)})` } : undefined;
-  return <span className={`studioControlArtwork ${item.kind === "short" ? "isPortrait" : ""}`} style={style}>{item.poster_url ? null : item.kind === "short" ? <Zap size={18} aria-hidden="true" /> : <Film size={18} aria-hidden="true" />}</span>;
+  const posterUrl = api.assetUrl(item.poster_url);
+  const style = posterUrl ? { backgroundImage: `url(${JSON.stringify(posterUrl)})` } : undefined;
+  return <span className={`studioControlArtwork ${item.kind === "short" ? "isPortrait" : ""}`} style={style}>{posterUrl ? null : item.kind === "short" ? <Zap size={18} aria-hidden="true" /> : <Film size={18} aria-hidden="true" />}</span>;
 }
 
 function EditorialItem({ item, now }: { item: MediaItem; now: number }) {
@@ -128,7 +149,7 @@ function EditorialItem({ item, now }: { item: MediaItem; now: number }) {
         <MediaArtwork item={item} />
         <span className="studioQueueCopy">
           <strong>{item.title}</strong>
-          <small>{kindLabel(item.kind)} · {sourceLabel(item)}</small>
+          <small>{kindLabel(item.kind)} · {sourceLabel(item)}{transcodeLabel(item) ? <span className={`studioTranscodeBadge ${transcodeLabel(item)!.cls}`}>{transcodeLabel(item)!.text}</span> : null}</small>
         </span>
         <span className="studioQueueMeta"><span className={`studioControlStatus is${item.visibility}`}><i aria-hidden="true" />{visibilityLabel(item.visibility)}</span><span className="studioQueueDate">{lane === "scheduled" ? formatPublishDate(item.publish_at, true) : item.is_available ? "Disponible" : "Indisponible"}</span></span>
         <ChevronRight size={18} aria-hidden="true" />
@@ -235,6 +256,126 @@ function LiveWorkspace({ liveItems }: { liveItems: MediaItem[] }) {
   );
 }
 
+function SeriesWorkspace({ series, onOpen, onCreate }: { series: MediaItem[]; onOpen: (id: string) => void; onCreate: () => void }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [data, setData] = useState<AdminEpisodes | null>(null);
+  const [order, setOrder] = useState<Record<number, string[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+
+  const selected = series.find((item) => item.id === selectedId) ?? null;
+  const episodesById = useMemo(() => {
+    const map: Record<string, MediaItem> = {};
+    (data?.episodes ?? []).forEach((episode) => {
+      map[episode.id] = episode;
+    });
+    return map;
+  }, [data]);
+
+  function open(id: string) {
+    setSelectedId(id);
+    setError(null);
+    setSaved(null);
+    setLoading(true);
+    api.adminMediaEpisodes(id)
+      .then((payload) => {
+        setData(payload);
+        const initial: Record<number, string[]> = {};
+        payload.seasons.forEach((season) => {
+          initial[season.season_number] = [...season.episode_ids];
+        });
+        setOrder(initial);
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Impossible de charger les épisodes."))
+      .finally(() => setLoading(false));
+  }
+
+  function moveEpisode(season: number, from: number, to: number) {
+    if (to < 0 || to >= (order[season]?.length ?? 0)) return;
+    setOrder((current) => {
+      const ids = [...(current[season] ?? [])];
+      const [moved] = ids.splice(from, 1);
+      if (!moved) return current;
+      ids.splice(to, 0, moved);
+      return { ...current, [season]: ids };
+    });
+    setSaved(null);
+  }
+
+  async function saveSeason(season: number) {
+    if (!selected) return;
+    const ids = order[season] ?? [];
+    setSaving(true);
+    setError(null);
+    setSaved(null);
+    try {
+      await api.adminReorderEpisodes(selected.id, season, ids);
+      setSaved(`Saison ${season} réordonnée.`);
+      open(selected.id);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Le réordonnancement a échoué.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      <header className="studioCommandHeader">
+        <div><h1>Séries</h1><p>Créez des contenants de série puis gérez l’ordre des épisodes par saison.</p></div>
+        <button className="primaryButton" type="button" onClick={onCreate}><Plus size={18} aria-hidden="true" />Nouvelle série</button>
+      </header>
+      <div className="studioSeriesGrid">
+        <ul className="studioSeriesList">
+          {series.length ? series.map((item) => (
+            <li key={item.id} className={item.id === selectedId ? "isActive" : undefined}>
+              <button type="button" onClick={() => open(item.id)} aria-current={item.id === selectedId ? "true" : undefined}>
+                <span className="studioSeriesListPoster">{api.assetUrl(item.poster_url) ? <span style={{ backgroundImage: `url(${JSON.stringify(api.assetUrl(item.poster_url))})` }} /> : <Film size={18} aria-hidden="true" />}</span>
+                <span><strong>{item.title}</strong><small>{item.no_spoil ? "No Spoil activé · " : ""}{VISIBILITY_LABELS[item.visibility] ?? item.visibility}</small></span>
+              </button>
+              <Link href={`/studio/media/${encodeURIComponent(item.id)}`} aria-label={`Modifier ${item.title}`}><span className="srOnly">Modifier</span><ChevronRight size={16} /></Link>
+            </li>
+          )) : (
+            <li className="studioSeriesEmpty"><ListVideo size={22} /><p>Aucune série. Créez-en une pour commencer.</p></li>
+          )}
+        </ul>
+        <aside className="studioSeriesDetail" aria-live="polite">
+          {!selected ? <div className="studioSeriesEmpty"><Clapperboard size={26} /><p>Sélectionnez une série pour réordonner ses saisons et épisodes.</p></div> : null}
+          {loading ? <LoadingStudio /> : null}
+          {error && !loading ? <p className="studioStorageIndexResult isError" role="alert">{error}</p> : null}
+          {saved ? <p className="studioStorageIndexResult" role="status">{saved}</p> : null}
+          {!loading && !error && data ? data.seasons.map((season) => (
+            <section key={season.season_number} className="studioSeasonPanel">
+              <header>
+                <div><h2>Saison {season.season_number}</h2><p>{episodesById[order[season.season_number]?.[0]] ? `${order[season.season_number].length} épisode${order[season.season_number].length > 1 ? "s" : ""}` : "Aucun épisode"}</p></div>
+                <button className="secondaryButton" type="button" onClick={() => void saveSeason(season.season_number)} disabled={saving}>{saving ? <Loader2 className="spin" size={16} /> : <Save size={16} />}Enregistrer l’ordre</button>
+              </header>
+              <ol className="studioEpisodeOrder">
+                {(order[season.season_number] ?? []).map((episodeId, index) => {
+                  const episode = episodesById[episodeId];
+                  return (
+                    <li key={episodeId}>
+                      <GripVertical size={15} aria-hidden="true" />
+                      <span className="studioEpisodeNumber">E{index + 1}</span>
+                      <span className="studioEpisodeTitle">{episode?.title ?? episodeId}</span>
+                      <span className="studioEpisodeMoves">
+                        <button type="button" onClick={() => moveEpisode(season.season_number, index, index - 1)} disabled={index === 0} aria-label="Monter"><ChevronUp size={16} /></button>
+                        <button type="button" onClick={() => moveEpisode(season.season_number, index, index + 1)} disabled={index === (order[season.season_number]?.length ?? 0) - 1} aria-label="Descendre"><ChevronDown size={16} /></button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )) : null}
+        </aside>
+      </div>
+    </>
+  );
+}
+
 function AdministrationWorkspace({ stats, indexing, indexReport, indexError, onIndexStorage }: { stats: Stats; indexing: boolean; indexReport: StorageIndexReport | null; indexError: string | null; onIndexStorage: () => void }) {
   const rows: Array<[string, number, LucideIcon, string]> = [
     ["Médias", stats.media, Film, "Contenus enregistrés"],
@@ -258,6 +399,7 @@ function AdministrationWorkspace({ stats, indexing, indexReport, indexError, onI
 }
 
 export default function StudioPage() {
+  const router = useRouter();
   const [view, setView] = useState<StudioView>("overview");
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -265,7 +407,7 @@ export default function StudioPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
-  const [creating, setCreating] = useState<"movie" | "short" | null>(null);
+  const [creating, setCreating] = useState<CreateKind | null>(null);
   const [indexingStorage, setIndexingStorage] = useState(false);
   const [storageIndexReport, setStorageIndexReport] = useState<StorageIndexReport | null>(null);
   const [storageIndexError, setStorageIndexError] = useState<string | null>(null);
@@ -287,7 +429,9 @@ export default function StudioPage() {
         setMedia(payload[0]);
         setStats(payload[1]);
       }
-    }).catch((reason) => setError(reason instanceof Error ? reason.message : "Nino Studio est indisponible."))
+    })
+      .then(() => api.adminPublishSweep().catch(() => null))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Nino Studio est indisponible."))
       .finally(() => { setLoading(false); setRefreshing(false); });
   }
 
@@ -355,7 +499,8 @@ export default function StudioPage() {
           {!loading && !error && !accessDenied && stats ? (
             <main className="studioControlContent">
               {creating ? <section className="studioCreateStage"><MediaEditor kind={creating} onCancel={() => setCreating(null)} onSaved={saveMedia} /></section> : null}
-              {!creating && ["overview", "videos", "series", "flashy"].includes(view) ? <StudioWorkspace media={media} now={now} view={view} onCreate={setCreating} /> : null}
+              {!creating && ["overview", "videos", "flashy"].includes(view) ? <StudioWorkspace media={media} now={now} view={view} onCreate={setCreating} /> : null}
+              {!creating && view === "series" ? <SeriesWorkspace series={media.filter((item) => item.kind === "series")} onOpen={(id) => router.push(`/studio/media/${encodeURIComponent(id)}`)} onCreate={() => setCreating("series")} /> : null}
               {!creating && view === "schedule" ? <ScheduleWorkspace media={media} now={now} /> : null}
               {!creating && view === "live" ? <LiveWorkspace liveItems={live} /> : null}
               {!creating && view === "administration" ? <AdministrationWorkspace stats={stats} indexing={indexingStorage} indexReport={storageIndexReport} indexError={storageIndexError} onIndexStorage={() => void indexStorage()} /> : null}

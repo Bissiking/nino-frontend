@@ -1,15 +1,26 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
 
-export function MediaCard({ item, priority = false, portrait = false }: { item: MediaItem; priority?: boolean; portrait?: boolean }) {
+function remainingLabel(item: MediaItem): string | null {
+  if (typeof item.position_seconds !== "number" || item.position_seconds == null) return null;
+  const remaining = Math.max(0, item.duration_seconds - item.position_seconds);
+  if (remaining <= 0) return null;
+  const minutes = Math.ceil(remaining / 60);
+  return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} restantes` : `${minutes} min restantes`;
+}
+
+export function MediaCard({ item, priority = false, portrait = false, resume = false }: { item: MediaItem; priority?: boolean; portrait?: boolean; resume?: boolean }) {
+  const posterUrl = api.assetUrl(item.poster_url);
+  const remaining = resume ? remainingLabel(item) : null;
   return (
     <Link className={`mediaCard focusTile ${portrait ? "portraitCard" : ""}`} href={`/watch/${item.id}`}>
       <div className="posterFrame">
-        {item.poster_url ? <Image src={item.poster_url} alt="" fill sizes={portrait ? "(max-width: 720px) 44vw, 210px" : "(max-width: 720px) 72vw, 320px"} priority={priority} className="posterImage" /> : <div className="posterFallback">{item.title.slice(0, 1)}</div>}
+        {posterUrl ? <img src={posterUrl} alt="" loading={priority ? "eager" : "lazy"} className="posterImage" /> : <div className="posterFallback">{item.title.slice(0, 1)}</div>}
         <span className="playChip"><Play size={16} fill="currentColor" aria-hidden="true" /></span>
         {item.kind === "live" ? <span className="liveBadge">En direct</span> : null}
+        {resume ? <span className="resumeBadge">Reprendre{remaining ? ` · ${remaining}` : ""}</span> : null}
         {item.progress_percent > 0 ? <span className="progressTrack" aria-label={`Progression ${item.progress_percent}%`}><span style={{ width: `${Math.min(item.progress_percent, 100)}%` }} /></span> : null}
       </div>
       <span className="mediaTitle">{item.title}</span>

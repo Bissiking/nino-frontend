@@ -36,7 +36,7 @@ export default function FlashyPage() {
               {items.map((item) => (
                 <article className="flashyItem" key={item.id}>
                   <div className="flashyVideo">
-                    {item.poster_url ? <Image src={item.poster_url} alt="" fill sizes="(max-width: 700px) 100vw, 430px" className="flashyImage" /> : null}
+                    {api.assetUrl(item.poster_url) ? <img src={api.assetUrl(item.poster_url) ?? ""} alt="" className="flashyImage" /> : null}
                     <div className="flashyScrim" />
                     <div className="flashyCopy">
                       <span>{item.genres.join(" · ")}</span><h2>{item.title}</h2><p>{item.synopsis}</p>

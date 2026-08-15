@@ -76,6 +76,8 @@ export function ProfileMenu() {
     const refreshToken = getRefreshToken();
     try {
       if (refreshToken) await api.logout(refreshToken);
+    } catch (error) {
+      if (error instanceof Error) console.error("Déconnexion distante impossible :", error.message);
     } finally {
       clearSession();
       router.push("/login");
