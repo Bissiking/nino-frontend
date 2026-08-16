@@ -76,6 +76,7 @@ export default function StudioMediaEditPage() {
             setMedia(saved);
             void loadPreview(saved.id);
           }}
+          onDeleted={() => router.push("/studio#videos")}
         />
       ) : null}
     </AppShell>

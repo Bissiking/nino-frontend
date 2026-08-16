@@ -647,6 +647,7 @@ Routes réservées aux administrateurs :
 - `GET /api/v1/admin/media/{media_id}/stream-decision` retourne une URL signée de prévisualisation administrateur ;
 - `POST /api/v1/admin/media` crée une fiche et envoie sa source en `multipart/form-data` ;
 - `PATCH /api/v1/admin/media/{media_id}` met à jour les métadonnées et la publication ;
+- `DELETE /api/v1/admin/media/{media_id}` supprime la fiche, ses fichiers source (dossier du média) et ses images. Pour une série, les épisodes rattachés et leurs fichiers sont supprimés également. Les progressions, favoris, likes, commentaires et jobs de transcode liés sont nettoyés. Retourne `{ deleted, media_id, deleted_count, freed_bytes }`.
 - `POST /api/v1/admin/media/{media_id}/image` uploade une image (`multipart/form-data`, champ `field` + fichier `file`) ;
 - `DELETE /api/v1/admin/media/{media_id}/image?field={field}` retire une image.
 
@@ -684,7 +685,11 @@ Endpoints administration du transcodage :
 - `GET /api/v1/admin/transcode/window` lit la fenêtre effective (`start`, `end`, `source`) ;
 - `PUT /api/v1/admin/transcode/window` {`start`, `end`} définit la fenêtre runtime (pilotable par Aion ou un Admin) ;
 - `DELETE /api/v1/admin/transcode/window` réinitialise à la config ;
-- `GET /api/v1/admin/transcode/jobs` liste les 100 derniers jobs.
+- `GET /api/v1/admin/transcode/config` lit la config transcode effective (env + surcharges runtime) : `window_start`, `window_end`, `worker_enabled`, `max_concurrency`, `poll_seconds`, `max_attempts`, `worker_nice`, `worker_cpuset`, `enable_1080p`, `enable_720p`, `enable_480p`, `source` (`config` | `runtime`) ;
+- `PUT /api/v1/admin/transcode/config` applique une mise à jour partielle (champs optionnels) et persiste le JSON en `app_settings` (clé `transcode_config`) ; retourne la config effective ;
+- `DELETE /api/v1/admin/transcode/config` supprime la surcharge runtime et retombe sur l'env ;
+- `GET /api/v1/admin/transcode/jobs` liste les 100 derniers jobs ;
+- `GET /api/v1/admin/transcode/status` expose l'état du worker (heartbeat, job running, compteurs) avec la config effective.
 
 ## Routes techniques
 

@@ -165,11 +165,16 @@ export const api = {
     });
     return request<MediaItem>("/api/v1/admin/media", { method: "POST", body: form });
   },
-  updateAdminMedia: (mediaId: string, payload: MediaWritePayload) =>
+  updateAdminMedia: (mediaId: string, payload: Partial<MediaWritePayload>) =>
     request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}`, {
       method: "PATCH",
       body: JSON.stringify(payload)
     }),
+  deleteAdminMedia: (mediaId: string) =>
+    request<{ deleted: boolean; media_id: string; deleted_count: number; freed_bytes: number }>(
+      `/api/v1/admin/media/${encodeURIComponent(mediaId)}`,
+      { method: "DELETE" }
+    ),
   uploadMediaImage: (mediaId: string, field: string, file: File) => {
     const form = new FormData();
     form.append("field", field);

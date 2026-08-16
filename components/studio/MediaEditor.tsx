@@ -2,7 +2,7 @@
 
 import { ChangeEvent, ClipboardEvent, DragEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, BellRing, Bold, CheckCircle2, Code2, FileStack, FileVideo2, FolderOpen, HardDrive, Heading2, Image as ImageIcon, Italic, Layers3, Link2, List, ListOrdered, Loader2, Minus, Play, Quote, RefreshCw, Save, ShieldAlert, Strikethrough, Table2, Tags, Trash2, Upload, VideoOff, X } from "lucide-react";
+import { AlertCircle, BellRing, Bold, CheckCircle2, Code2, FileStack, FileVideo2, FolderOpen, HardDrive, Heading2, Image as ImageIcon, Italic, Layers3, Link2, List, ListOrdered, Loader2, Lock, Minus, Play, Quote, RefreshCw, Save, ShieldAlert, Strikethrough, Table2, Tags, Trash2, TriangleAlert, Upload, VideoOff, X } from "lucide-react";
 import { MediaPlayer } from "@/components/MediaPlayer";
 import { Markdown } from "@/components/Markdown";
 import { api } from "@/lib/api";
@@ -66,6 +66,7 @@ type Props = {
   media?: MediaItem | null;
   onCancel: () => void;
   onSaved: (media: MediaItem) => void;
+  onDeleted?: (media: MediaItem) => void;
   variant?: "panel" | "page";
   decision?: StreamDecision | null;
   previewError?: string | null;
@@ -128,7 +129,7 @@ function initialForm(kind: MediaKind, media?: MediaItem | null) {
   };
 }
 
-export function MediaEditor({ kind, media, onCancel, onSaved, variant = "panel", decision = null, previewError = null, refreshing = false, onRefresh }: Props) {
+export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant = "panel", decision = null, previewError = null, refreshing = false, onRefresh }: Props) {
   const [form, setForm] = useState(() => initialForm(kind, media));
   const [seriesOptions, setSeriesOptions] = useState<MediaItem[]>([]);
   const [sourceMode, setSourceMode] = useState<SourceMode>("file");
@@ -142,6 +143,10 @@ export function MediaEditor({ kind, media, onCancel, onSaved, variant = "panel",
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
   const [tagDraft, setTagDraft] = useState("");
   const [genreDraft, setGenreDraft] = useState("");
   const [genrePasteFeedback, setGenrePasteFeedback] = useState<number | null>(null);
@@ -380,6 +385,66 @@ export function MediaEditor({ kind, media, onCancel, onSaved, variant = "panel",
     }));
     markDirty();
   }
+
+  function closeDeleteModal() {
+    if (deleteBusy) return;
+    setDeleteOpen(false);
+    setDeleteError(null);
+  }
+
+  async function makePrivate() {
+    if (!media) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const updated = await api.updateAdminMedia(media.id, { visibility: "private" });
+      setForm((current) => ({ ...current, visibility: "private" }));
+      setSuccess("Le média est passé en privé. Il reste modifiable dans Nino Studio.");
+      onSaved(updated);
+      setDeleteOpen(false);
+    } catch (reason) {
+      setDeleteError(reason instanceof Error ? reason.message : "Impossible de passer ce média en privé.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!media) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await api.deleteAdminMedia(media.id);
+      onDeleted?.(media);
+    } catch (reason) {
+      setDeleteError(reason instanceof Error ? reason.message : "La suppression du média a échoué.");
+      setDeleteBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!deleteOpen) return;
+    const previousActive = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => {
+      (deleteDialogRef.current?.querySelector<HTMLButtonElement>("button") ?? deleteDialogRef.current)?.focus();
+    }, 0);
+    function onDeleteKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDeleteModal();
+      }
+    }
+    window.addEventListener("keydown", onDeleteKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", onDeleteKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousActive?.focus?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deleteOpen]);
 
   function frameAspects(): FrameAspect[] {
     const aspects: FrameAspect[] = ["landscape"];
@@ -947,6 +1012,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, variant = "panel",
           <div className="mediaEditPageActions">
             {canOpenPublicPlayer ? <Link className="secondaryButton" href={`/watch/${encodeURIComponent(media.id)}`} target="_blank"><Play size={18} aria-hidden="true" />Lire</Link> : null}
             <button className="secondaryButton" type="button" onClick={onRefresh} disabled={refreshing}><RefreshCw className={refreshing ? "spin" : undefined} size={18} aria-hidden="true" />{refreshing ? "Actualisation…" : "Rafraîchir"}</button>
+            <button className="dangerButton" type="button" onClick={() => setDeleteOpen(true)} disabled={busy} aria-haspopup="dialog"><Trash2 size={18} aria-hidden="true" />Supprimer</button>
             <button className="primaryButton mediaEditDesktopSave" type="submit" form="media-edit-form" disabled={busy} title={`Enregistrer (${isMac ? "⌘" : "Ctrl"} + S)`}>{busy ? <Loader2 className="spin" size={18} /> : <Save size={18} />}{busy ? "Enregistrement…" : "Enregistrer"}</button>
           </div>
         </header>
@@ -988,6 +1054,32 @@ export function MediaEditor({ kind, media, onCancel, onSaved, variant = "panel",
             <div><button className="secondaryButton" type="button" onClick={onCancel} disabled={busy}>Retour au Studio</button><button className="primaryButton" type="submit" disabled={busy} title={`Enregistrer (${isMac ? "⌘" : "Ctrl"} + S)`}>{busy ? <Loader2 className="spin" size={18} /> : <Save size={18} />}{busy ? "Enregistrement…" : "Enregistrer les modifications"}</button></div>
           </footer>
         </form>
+
+        {deleteOpen && media ? (
+          <div className="studioDeleteBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDeleteModal(); }}>
+            <div className="studioDeleteDialog" role="dialog" aria-modal="true" aria-labelledby="studio-delete-title" aria-describedby="studio-delete-copy" ref={deleteDialogRef}>
+              <header className="studioDialogHeader">
+                <span className="studioDialogIcon" aria-hidden="true"><TriangleAlert size={22} /></span>
+                <div>
+                  <h2 id="studio-delete-title">Supprimer « {media.title} » ?</h2>
+                  <p id="studio-delete-copy">Le contenu et sa source disparaissent durablement des fichiers de Nino.</p>
+                </div>
+                <button className="studioIconButton" type="button" onClick={closeDeleteModal} aria-label="Fermer la fenêtre"><X size={18} /></button>
+              </header>
+              <div className="studioDialogBody">
+                <p>Hésitez ? Mettez le contenu en privé : il n’apparaîtra plus dans le catalogue, mais restera modifiable dans Nino Studio.</p>
+                <p className="studioDeleteCost" role="note"><HardDrive size={17} aria-hidden="true" />{media.file_size_bytes != null ? `Vous perdrez ${formatBytes(media.file_size_bytes)} de fichiers source.` : "Vous perdrez l’intégralité des fichiers source."}<strong>Cette action est irréversible.</strong></p>
+                {isSeries ? <p className="studioDeleteNote">Tous les épisodes rattachés à cette série seront également supprimés.</p> : null}
+                {deleteError ? <p className="mediaEditorMessage isError" role="alert"><AlertCircle size={18} aria-hidden="true" />{deleteError}</p> : null}
+              </div>
+              <div className="studioDialogActions">
+                <button className="secondaryButton" type="button" onClick={closeDeleteModal} disabled={deleteBusy}>Annuler</button>
+                <button className="secondaryButton" type="button" onClick={() => void makePrivate()} disabled={deleteBusy}><Lock size={16} aria-hidden="true" />Mettre en privé</button>
+                <button className="dangerButton" type="button" onClick={() => void confirmDelete()} disabled={deleteBusy} aria-label={deleteBusy ? "Suppression en cours" : undefined}>{deleteBusy ? <Loader2 className="spin" size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}{deleteBusy ? "Suppression…" : "Supprimer définitivement"}</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
     );
   }
