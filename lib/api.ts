@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiResponse, AuthConfig, HomePayload, MediaItem, NotificationItem, Profile, StreamDecision, TokenPair, User, V7ImportPreview, V7ImportResult, V7MigrationSnapshot, V7MigrationSnapshotDetail } from "@/types/nino";
+import type { AdminEpisodes, ApiResponse, AuthConfig, CommentCreateResult, CommentList, FavoriteToggleResult, HomePayload, InteractionsState, LikeToggleResult, MediaItem, MediaWritePayload, NotificationItem, Profile, PublishSweepResult, SeriesPage, StorageIndexReport, StreamDecision, TokenPair, User } from "@/types/nino";
 import { getAccessToken, redirectToLogin } from "./session";
 
 const API_URL = process.env.NEXT_PUBLIC_NINO_API_URL ?? "http://localhost:8000";
@@ -27,15 +27,27 @@ async function request<T>(path: string, init: RequestInit = {}, requiresAuth = t
   }
 
   const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      ...(!isFormData ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers
-    }
-  });
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers: {
+        ...(!isFormData ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers
+      }
+    });
+  } catch (error) {
+    throw new NinoApiError(
+      "NETWORK_ERROR",
+      "Impossible de contacter le serveur. Vérifiez votre connexion.",
+      { cause: error instanceof Error ? error.message : String(error) },
+      0
+    );
+  }
+
   const body = (await response.json()) as ApiResponse<T>;
 
   if (requiresAuth && response.status === 401) {
@@ -88,6 +100,8 @@ export const api = {
   },
   mediaDetail: (id: string, profileId?: string | null) =>
     request<MediaItem>(`/api/v1/media/${id}${profileId ? `?profile_id=${profileId}` : ""}`),
+  seriesDetail: (id: string, profileId?: string | null) =>
+    request<SeriesPage>(`/api/v1/media/${id}/series${profileId ? `?profile_id=${profileId}` : ""}`),
   search: (query: string) => request<{ query: string; items: MediaItem[] }>(`/api/v1/search?q=${encodeURIComponent(query)}`),
   streamDecision: (id: string) => request<StreamDecision>(`/api/v1/stream/${id}/decision`),
   progress: (id: string, profileId: string, positionSeconds: number, durationSeconds: number) =>
@@ -102,21 +116,73 @@ export const api = {
     }),
   notifications: (profileId?: string | null) =>
     request<NotificationItem[]>(`/api/v1/notifications${profileId ? `?profile_id=${profileId}` : ""}`),
+  mediaInteractions: (mediaId: string, profileId?: string | null) =>
+    request<InteractionsState>(`/api/v1/media/${mediaId}/interactions${profileId ? `?profile_id=${profileId}` : ""}`),
+  toggleLike: (mediaId: string, profileId: string) =>
+    request<LikeToggleResult>(`/api/v1/media/${mediaId}/like`, {
+      method: "POST",
+      body: JSON.stringify({ profile_id: profileId })
+    }),
+  toggleFavorite: (mediaId: string, profileId: string) =>
+    request<FavoriteToggleResult>(`/api/v1/media/${mediaId}/favorite`, {
+      method: "POST",
+      body: JSON.stringify({ profile_id: profileId })
+    }),
+  likedMedia: (profileId: string) => request<MediaItem[]>(`/api/v1/likes?profile_id=${encodeURIComponent(profileId)}`),
+  favoritedMedia: (profileId: string) => request<MediaItem[]>(`/api/v1/favorites?profile_id=${encodeURIComponent(profileId)}`),
+  comments: (mediaId: string) => request<CommentList>(`/api/v1/media/${mediaId}/comments`),
+  createComment: (mediaId: string, profileId: string, content: string, parentId?: string | null) =>
+    request<CommentCreateResult>(`/api/v1/media/${mediaId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ profile_id: profileId, content, ...(parentId ? { parent_id: parentId } : {}) })
+    }),
+  deleteComment: (mediaId: string, commentId: string) =>
+    request<{ deleted: boolean; comment_id: string }>(`/api/v1/media/${mediaId}/comments/${commentId}`, { method: "DELETE" }),
   adminStats: () =>
     request<{ users: number; libraries: number; media: number; transcode_jobs: number; scan_jobs: number }>("/api/v1/admin/stats"),
-  createV7MigrationSnapshot: () =>
-    request<V7MigrationSnapshot>("/api/v1/admin/migrations/v7/snapshots", { method: "POST" }),
-  v7MigrationSnapshots: () =>
-    request<V7MigrationSnapshot[]>("/api/v1/admin/migrations/v7/snapshots"),
-  v7MigrationSnapshot: (snapshotId: string) =>
-    request<V7MigrationSnapshotDetail>(`/api/v1/admin/migrations/v7/snapshots/${encodeURIComponent(snapshotId)}`),
-  v7ImportPreview: (snapshotId: string) =>
-    request<V7ImportPreview>(`/api/v1/admin/migrations/v7/snapshots/${encodeURIComponent(snapshotId)}/import-preview`),
-  importV7Videos: (snapshotId: string, videoIds: string[], profileMappings: Record<string, string>) =>
-    request<V7ImportResult>(`/api/v1/admin/migrations/v7/snapshots/${encodeURIComponent(snapshotId)}/import`, {
-      method: "POST",
-      body: JSON.stringify({ video_ids: videoIds, profile_mappings: profileMappings, conflict_strategy: "skip" })
+  adminMedia: () => request<MediaItem[]>("/api/v1/admin/media"),
+  indexMediaStorage: () => request<StorageIndexReport>("/api/v1/admin/media/index-storage", { method: "POST" }),
+  adminMediaDetail: (mediaId: string) =>
+    request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}`),
+  adminMediaStreamDecision: (mediaId: string) =>
+    request<StreamDecision>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}/stream-decision`),
+  adminMediaEpisodes: (mediaId: string) =>
+    request<AdminEpisodes>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}/episodes`),
+  adminReorderEpisodes: (mediaId: string, season: number, episodeIds: string[]) =>
+    request<{ series_id: string; season: number; reordered: string[]; kept: string[] }>(
+      `/api/v1/admin/media/${encodeURIComponent(mediaId)}/episodes/reorder`,
+      { method: "POST", body: JSON.stringify({ season, episode_ids: episodeIds }) }
+    ),
+  adminPublishSweep: () =>
+    request<PublishSweepResult>("/api/v1/admin/media/publish-sweep", { method: "POST" }),
+  createAdminMedia: (payload: MediaWritePayload & { source_mode: "file" | "hls" }, files: File[]) => {
+    const form = new FormData();
+    form.append("payload", JSON.stringify(payload));
+    files.forEach((file) => {
+      const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+      form.append("files", file, file.name);
+      form.append("asset_paths", relativePath);
+    });
+    return request<MediaItem>("/api/v1/admin/media", { method: "POST", body: form });
+  },
+  updateAdminMedia: (mediaId: string, payload: Partial<MediaWritePayload>) =>
+    request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
     }),
+  deleteAdminMedia: (mediaId: string) =>
+    request<{ deleted: boolean; media_id: string; deleted_count: number; freed_bytes: number }>(
+      `/api/v1/admin/media/${encodeURIComponent(mediaId)}`,
+      { method: "DELETE" }
+    ),
+  uploadMediaImage: (mediaId: string, field: string, file: File) => {
+    const form = new FormData();
+    form.append("field", field);
+    form.append("file", file);
+    return request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}/image`, { method: "POST", body: form });
+  },
+  deleteMediaImage: (mediaId: string, field: string) =>
+    request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}/image?field=${encodeURIComponent(field)}`, { method: "DELETE" }),
   assetUrl: (path: string | null) => {
     if (!path) return null;
     if (/^https?:\/\//i.test(path) || path.startsWith("data:") || path.startsWith("blob:")) return path;

@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
 
 export function HomeTopTen({ items }: { items: MediaItem[] }) {
@@ -14,7 +14,7 @@ export function HomeTopTen({ items }: { items: MediaItem[] }) {
             <Link href={`/watch/${item.id}`} className="topTenItem focusTile" aria-label={`${index + 1}. ${item.title}`}>
               <span className="topTenRank" aria-hidden="true">{index + 1}</span>
               <span className="topTenThumb">
-                {item.poster_url ? <Image src={item.poster_url} alt="" fill sizes="260px" className="posterImage" /> : <span className="topTenFallback">{item.title.slice(0, 1)}</span>}
+                {api.assetUrl(item.poster_url) ? <img src={api.assetUrl(item.poster_url) ?? ""} alt="" loading="lazy" className="posterImage" /> : <span className="topTenFallback">{item.title.slice(0, 1)}</span>}
               </span>
               <span className="topTenCopy"><strong>{item.title}</strong><small>{item.genres[0] ?? item.kind}</small></span>
             </Link>

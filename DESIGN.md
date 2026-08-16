@@ -1,147 +1,123 @@
 ---
 name: Nino Frontend
-description: Une salle de diffusion personnelle, cinématographique et pensée pour la télévision.
+description: Une plateforme de streaming sobre, familière et centrée sur les programmes.
 colors:
-  viewing-room: "#0d0b0f"
-  viewing-room-deep: "#080709"
-  surface: "#18151a"
-  surface-raised: "#242026"
-  surface-hover: "#302a32"
-  ink: "#fff8f4"
-  muted: "#b9adb7"
-  coral: "#ff5264"
-  orange: "#ff8128"
+  black: "#0f0f0f"
+  black-deep: "#080808"
+  surface: "#1a1a1a"
+  surface-raised: "#242424"
+  ink: "#ffffff"
+  muted: "#bfbfbf"
+  coral: "#e94b3c"
+  orange: "#f17c58"
 typography:
   display:
-    fontFamily: "Sora Variable, Helvetica Neue, Helvetica, Arial, sans-serif"
-    fontSize: "clamp(3rem, 5.4vw, 5.8rem)"
+    fontFamily: "Montserrat, Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontSize: "clamp(2.7rem, 5vw, 4rem)"
     fontWeight: 800
-    lineHeight: 1.02
+    lineHeight: 1.1
     letterSpacing: "-0.03em"
   body:
-    fontFamily: "Sora Variable, Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontFamily: "Roboto, Helvetica Neue, Helvetica, Arial, sans-serif"
     fontSize: "1rem"
-    lineHeight: 1.55
+    lineHeight: 1.6
+  top-ten:
+    fontFamily: "Sora Variable, Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontSize: "clamp(1.35rem, 2vw, 1.8rem)"
+    fontWeight: 800
 rounded:
-  sm: "10px"
-  md: "14px"
+  sm: "8px"
+  md: "12px"
 spacing:
   compact: "12px"
   standard: "24px"
-  section: "48px"
-components:
-  button-primary:
-    backgroundColor: "{colors.coral}"
-    textColor: "{colors.viewing-room-deep}"
-    rounded: "{rounded.sm}"
-    padding: "0 20px"
-    height: "48px"
-  button-secondary:
-    backgroundColor: "rgba(255, 248, 244, 0.16)"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.sm}"
-    padding: "0 20px"
-    height: "48px"
+  section: "44px"
 ---
 
 # Design System: Nino Frontend
 
-## Overview
+## Direction
 
-**Creative North Star: "La salle de diffusion Nino"**
+**North Star : « Nino, simplement »**
 
-Nino place les programmes et leurs créateurs au premier plan dans une salle de visionnage sombre et chaleureuse. Le cadre reprend des repères immédiatement compris sur télévision — hero cinématographique, navigation latérale, rails et classement — puis les unifie avec le corail et l’orange du logo.
+La direction de référence est l’ancienne interface Nino présente dans `.backup`. Elle reprend les conventions les plus sobres d’une plateforme de streaming : un header horizontal léger, un hero éditorial plein écran, des rails sans conteneurs décoratifs et une interface noire où les images portent l’essentiel de l’identité.
 
-L’interface reste dense mais lisible, avec peu de chrome et des images qui portent la hiérarchie. Les commandes sont grandes, prévisibles et toujours atteignables au clavier ou à la télécommande.
+Nino ne doit pas ressembler à un tableau de bord dans ses surfaces de visionnage. La navigation reste discrète, le contenu domine et le dégradé historique corail–orange ne sert qu’aux actions et petits signaux de marque.
 
-**Key Characteristics:**
+La section Top 10 issue de la refonte V8 est l’exception explicitement conservée : grands chiffres contour corail, affiches verticales et défilement horizontal.
 
-- hero éditorial immersif et image-led ;
-- navigation vidéo compacte sur desktop, barre inférieure sur mobile ;
-- classement Top 10 à chiffres contour corail ;
-- surfaces prune-noir, accents corail et orange ;
-- focus orange très visible.
+**Règle de migration.** Toute surface qui existait dans Nino V7 doit d’abord retrouver sa composition, ses composants et son comportement V7. Un nouveau step-up visuel ne peut être introduit que par une demande explicite et localisée. V8 désigne d’abord l’architecture indépendante et son backend, pas une nouvelle direction artistique.
 
-## Colors
+## Couleurs
 
-La palette associe des noirs légèrement prune à un corail énergique, avec l’orange réservé aux signaux secondaires et au focus.
+- **Black** (`#0f0f0f`) : fond principal neutre.
+- **Deep Black** (`#080808`) : recul et lecteur.
+- **Surface** (`#1a1a1a`) : champs et panneaux fonctionnels.
+- **Raised Surface** (`#242424`) : survol et sélection.
+- **White** (`#ffffff`) : texte principal.
+- **Muted** (`#bfbfbf`) : métadonnées.
+- **Nino Coral** (`#e94b3c`) et **Nino Orange** (`#f17c58`) : extrémités du dégradé historique.
 
-- **Viewing Room** (`#0d0b0f`) : fond principal.
-- **Deep Viewing Room** (`#080709`) : navigation et zones de recul.
-- **Surface** (`#18151a`) : champs, catégories et blocs fonctionnels.
-- **Raised Surface** (`#242026`) : sélection et état actif.
-- **Warm Ink** (`#fff8f4`) : texte principal.
-- **Muted Mauve** (`#b9adb7`) : métadonnées et texte secondaire.
-- **Nino Coral** (`#ff5264`) : actions, profil, progression et identité.
-- **Nino Orange** (`#ff8128`) : focus, notation et accent complémentaire.
+Le fond reste noir neutre, jamais prune. Le dégradé corail–orange est réservé aux actions principales, à l’avatar par défaut et à quelques états actifs ; il n’est pas utilisé comme décoration de grande surface.
 
-**The Signal Rule.** Le corail indique l’action ou la marque ; l’orange attire l’attention sur le focus et les informations de rang, jamais sur de grandes surfaces décoratives.
+## Typographie
 
-## Typography
-
-**Display Font:** Sora Variable, avec Helvetica Neue, Helvetica et Arial en repli.
-**Body Font:** Sora Variable, avec Helvetica Neue, Helvetica et Arial en repli.
-
-La typographie est directe, compacte et conçue pour rester lisible à distance. Les titres sont lourds et serrés ; les synopsis gardent une mesure courte.
-
-- **Display** (800, `clamp(3rem, 5.4vw, 5.8rem)`, 1.02) : titres de hero.
-- **Title** (800, `clamp(1.35rem, 2vw, 1.8rem)`) : titres de rails et pages.
-- **Body** (400, `1rem`, 1.55) : synopsis et textes fonctionnels.
-- **Label** (800, `0.72rem–0.9rem`) : métadonnées, badges et navigation.
+La hiérarchie reprend l’ancienne combinaison Montserrat/Roboto avec des replis Helvetica. Les titres sont nets et compacts ; le texte reste courant et discret. Le hero plafonne à `4rem`, contrairement à la refonte V8 plus démonstrative.
 
 ## Layout
 
-Desktop utilise un shell de `224px` avec une top bar de `70px`. Le hero occupe jusqu’à 68vh, puis le catalogue suit un rythme de section de `48px`. Les rails sont horizontaux et scroll-snap. Entre 761px et 1100px, la sidebar se réduit aux icônes. À 760px et moins, elle devient une barre inférieure à quatre destinations, le hero passe en composition verticale et les rails affichent des cartes larges adaptées au geste tactile.
+Sur desktop et télévision, le header horizontal de `72px` survole le hero. Il contient le logo, les destinations principales sous forme de liens texte et les actions de profil/Studio. Il n’y a pas de sidebar pour les surfaces de visionnage.
 
-## Elevation & Depth
+Le hero occupe environ `85vh`, avec le contenu aligné en bas à gauche. Les rails suivent avec des espacements généreux, sans panneaux englobants. Les cartes sont en 16:9 et Flashy reste en 9:16.
 
-Le système est plat par défaut. La profondeur vient des niveaux de noir, des scrims sur les images et d’une ombre douce uniquement lorsque les cartes sont survolées ou focalisées. Le hero utilise `0 24px 70px rgba(0,0,0,.38)` lorsque le contexte demande une séparation.
+Sur mobile, le header se réduit au logo et au profil, tandis que quatre destinations restent accessibles dans la barre inférieure. Les rails restent horizontaux et tactiles.
 
-## Shapes
+Nino Studio conserve sa structure de régie compacte, mais adopte les noirs neutres, la typographie et les contrôles de cette direction.
 
-Les contrôles et catégories utilisent 10px de rayon ; les médias et panneaux 14px. Les avatars et boutons icônes restent circulaires. Les badges d’état sont plus serrés, avec 6px. Les grandes capsules sont réservées à la recherche globale.
-
-## Components
-
-### Buttons
-
-- Le bouton primaire est corail, haut de 48px et très contrasté.
-- Le secondaire utilise un voile blanc translucide sur l’image du hero.
-- Le focus est un contour orange de 3px avec un décalage de 4px.
-
-### Cards / Containers
-
-- Les cartes média sont en 16:9 ; Flashy utilise 9:16.
-- Elles restent sans cadre et se soulèvent légèrement au survol ou au focus.
-- La progression est une ligne corail de 4px collée au bas de l’image.
+## Composants
 
 ### Navigation
 
-- La top bar porte la marque, la recherche et le profil.
-- La sidebar reprend une densité de plateforme vidéo, avec icône et libellé.
-- L’état actif utilise une surface relevée et une icône corail.
-- Sur mobile, quatre destinations restent visibles dans la barre inférieure.
+- header transparent au-dessus du hero, noir sur les surfaces fonctionnelles ;
+- liens texte blancs atténués, soulignement corail–orange pour l’état actif ;
+- cibles interactives de 42px minimum et focus blanc très visible ;
+- barre inférieure mobile conservée.
+
+Le bouton profil ouvre le menu modal centré de V7 : identité du profil, navigation, administration disponible et déconnexion. Il ne mène pas directement à la page des profils.
+
+### Hero
+
+- image plein cadre ;
+- double scrim noir horizontal et vertical ;
+- titre limité, synopsis de trois lignes maximum sur mobile ;
+- boutons simples, primaire en dégradé historique et secondaire translucide ;
+- aucun eyebrow ou label décoratif au-dessus du titre.
+
+### Cartes et rails
+
+- cartes 16:9 sans conteneur externe ;
+- rayon `12px`, bordure presque invisible ;
+- titre et métadonnées sous l’image ;
+- léger agrandissement au survol/focus, avec ombre noire douce ;
+- progression corail collée au bas de l’image.
+
+### Catégories
+
+Les catégories sont des filtres compacts sur une seule ligne scrollable, pas une grille de gros blocs décoratifs.
 
 ### Top 10
 
-Le classement associe de grands chiffres creux corail à des vignettes verticales. Il reste horizontal et scrollable pour préserver une lecture rapide sur télévision comme au tactile.
+Conserver le composant V8 actuel : grands chiffres creux `#ff5264`, fond de chiffre `#0d0b0f`, affiches verticales et copie superposée. Les changements globaux de palette ne doivent pas modifier cette section.
 
-### Flashy
+### Nino Studio
 
-Le flux court occupe une colonne 9:16 centrée avec scroll-snap vertical. Les titres et actions sont placés dans un scrim bas pour rester lisibles sans masquer la vidéo.
+Studio reprend le tableau de bord V7 : navigation horizontale, indicateurs compacts, panneaux noirs et workflow d’upload en étapes. L’import conserve le drag-and-drop, le choix fichier/HLS, les métadonnées, la publication, les visuels, l’aperçu du fichier et les états d’envoi. Les appels et validations restent ceux du backend V8.
 
-## Do's and Don'ts
+## Règles
 
-### Do:
-
-- **Do** laisser les visuels réels du catalogue porter l’atmosphère.
-- **Do** garder les cibles d’action à au moins 42–48px.
-- **Do** vérifier le focus clavier et télécommande sur chaque lien interactif.
-- **Do** conserver les états chargement, vide, erreur et connexion perdue.
-
-### Don't:
-
-- **Don't** réintroduire le vert phosphore de l’ancien univers signal-console.
-- **Don't** empiler des panneaux encadrés autour des contenus média.
-- **Don't** masquer la navigation principale derrière un menu sur télévision.
-- **Don't** utiliser corail et orange comme remplissage décoratif simultané.
+- Laisser les visuels réels du catalogue créer l’atmosphère.
+- Préserver chargement, vide, erreur, perte de connexion et accès refusé.
+- Garder un focus visible au clavier et à la télécommande.
+- Ne pas réintroduire une sidebar dans l’expérience de visionnage.
+- Ne pas employer de fond prune, de grosses capsules de recherche ou de tuiles de catégories décoratives.
+- Ne pas modifier la section Top 10 sans une nouvelle demande explicite.

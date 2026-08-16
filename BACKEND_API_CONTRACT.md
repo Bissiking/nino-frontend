@@ -2,6 +2,14 @@
 
 Ce document peut être transmis tel quel à Codex dans le dépôt backend.
 
+## Stockage HLS LUMA
+
+- `POST /api/v1/admin/media/index-storage` analyse le dossier configuré par `NINO_MEDIA_DIR`.
+- Les dossiers conservent leur UUID média et leurs variantes sous la forme `<résolution>p_<fps>fps/index.m3u8` avec leurs segments.
+- La réponse contient `discovered`, `created`, `updated`, `skipped` et `errors`.
+- Les objets média administrateur exposent `source_origin` et `hls_variants` (`path`, `label`, `resolution`, `width`, `height`, `fps`, `bandwidth`, `segments_count`, `size_bytes`).
+- Une playlist maître est produite virtuellement lorsque l'ancien stockage n'en contient pas.
+
 Il décrit :
 
 - le contrat réellement consommé par le frontend Nino ;
@@ -46,7 +54,7 @@ Règles de versionnement :
 Version initiale demandée pour la livraison :
 
 ```python
-FastAPI(title="Nino Backend", version="8.0.0", openapi_url="/api/v1/openapi.json")
+FastAPI(title="Nino Backend", version="8.1.0", openapi_url="/api/v1/openapi.json")
 ```
 
 ## Règles globales
@@ -194,6 +202,7 @@ Contraintes attendues :
 - `genres` est toujours un tableau, éventuellement vide ;
 - `duration_seconds >= 0` ;
 - `progress_percent` est compris entre `0` et `100` ;
+- `position_seconds` (optionnel) : position de reprise en secondes, renseignée pour les items du rail `continue` ;
 - les URLs d'images doivent être directement accessibles par Next Image ou provenir d'un domaine autorisé côté frontend.
 
 ### HomeRail
@@ -385,9 +394,9 @@ Réponse `200` :
 
 Règles :
 
-- `hero` peut être `null` si le catalogue est vide ;
+- `hero` peut être `null` si le catalogue est vide ; il privilégie le média en cours de lecture le plus récent, sinon le dernier ajout ;
 - `top10.items` contient au maximum 10 médias disponibles, triés par note décroissante puis date d'ajout décroissante ;
-- `continue.items` contient uniquement les médias dont `progress_percent > 0` ;
+- `continue` est le rail "Reprendre" : contient les médias du profil dont `0 < progress_percent < 95`, triés par date de dernier visionnage décroissante ; chaque item expose `position_seconds` (position de reprise en secondes) ;
 - le progrès doit être celui du profil demandé ;
 - les rails connus doivent être retournés avec `items: []` lorsqu'ils sont vides ;
 - ne jamais exposer la progression d'un autre profil.
@@ -629,22 +638,58 @@ Réponse `200` :
 
 `last_scan_at` peut être `null`. Cette route n'est pas encore affichée par le frontend actuel.
 
-### Migration V7 vers V8
+### Administration des médias
 
 Routes réservées aux administrateurs :
 
-- `POST /api/v1/admin/migrations/v7/snapshots` récupère un export complet depuis LUMA V7 ;
-- `GET /api/v1/admin/migrations/v7/snapshots` liste les snapshots et leurs compteurs ;
-- `GET /api/v1/admin/migrations/v7/snapshots/{snapshot_id}` retourne le JSON V7 complet ;
-- `GET /api/v1/admin/migrations/v7/snapshots/{snapshot_id}/import-preview` prépare les vidéos et les profils de destination ;
-- `POST /api/v1/admin/migrations/v7/snapshots/{snapshot_id}/import` importe la sélection dans le catalogue V8.
+- `GET /api/v1/admin/media` liste tous les médias, y compris brouillons et privés ;
+- `GET /api/v1/admin/media/{media_id}` retourne un média, y compris brouillon ou privé ;
+- `GET /api/v1/admin/media/{media_id}/stream-decision` retourne une URL signée de prévisualisation administrateur ;
+- `POST /api/v1/admin/media` crée une fiche et envoie sa source en `multipart/form-data` ;
+- `PATCH /api/v1/admin/media/{media_id}` met à jour les métadonnées et la publication ;
+- `DELETE /api/v1/admin/media/{media_id}` supprime la fiche, ses fichiers source (dossier du média) et ses images. Pour une série, les épisodes rattachés et leurs fichiers sont supprimés également. Les progressions, favoris, likes, commentaires et jobs de transcode liés sont nettoyés. Retourne `{ deleted, media_id, deleted_count, freed_bytes }`.
+- `POST /api/v1/admin/media/{media_id}/image` uploade une image (`multipart/form-data`, champ `field` + fichier `file`) ;
+- `DELETE /api/v1/admin/media/{media_id}/image?field={field}` retire une image.
 
-Nino Studio utilise ces routes pour lancer une récupération, afficher son historique,
-préparer chaque vidéo depuis `row`, `relations` et `assets`, puis effectuer un import
-additif. Chaque identifiant utilisateur V7 est associé explicitement à un profil V8
-existant ou ignoré. Les médias déjà présents sont ignorés via `v7_source_id` et les
-données sans équivalent restent archivées dans `raw_metadata`. Le token LUMA reste
-dans le `.env` du backend et ne doit jamais être envoyé au navigateur.
+Les champs images acceptés par les routes image sont `thumbnail`, `thumbnail_vertical`,
+`poster` et `backdrop`. Les fichiers doivent être JPEG, PNG ou WebP (vérifiés par
+signature binaire) et sont servis statiquement sous `/media-images/{fichier}`. Les URLs
+relative sont résolues côté frontend via `api.assetUrl`. Le remplacement d'une image
+supprime l'ancien fichier, et `DELETE` supprime le fichier du disque.
+
+La création contient un champ `payload` JSON, des champs `files` répétés et un
+`asset_paths` pour chaque fichier. `source_mode=file` accepte une vidéo unique.
+`source_mode=hls` exige les playlists `.m3u8` et les segments `.ts` ou `.m4s` du
+dossier complet. Le backend valide tous les chemins et toutes les références avant
+de publier le paquet de façon atomique.
+
+`GET /api/v1/stream/{media_id}/decision` retourne une URL signée temporaire. Pour
+HLS, le backend réécrit les références des playlists afin de protéger également les
+sous-playlists et segments sans exposer le stockage directement.
+
+Un média `source_mode="file"` est enregistré avec `encoding_status="pending"` et un
+job de transcodage est inséré. La vidéo est lisible en `direct_play` (source brute)
+tant que le job n'est pas terminé. Le worker (`worker.py`, process séparé) transcodifie
+en HLS multi-qualités pendant une fenêtre horaire configurable (nuit par défaut), puis
+bascule `source_kind="hls"`, `source_path="master.m3u8"` et `encoding_status="ready"`.
+
+Champs de statut exposés sur les médias :
+- `encoding_status`: `pending | running | ready | failed | null` ;
+- `hls_status`: `ready | null`.
+
+Qualités ABR : 1080p/720p/480p (plafonnées à la résolution source), FPS 60 si la
+source est en 60 fps sinon 30. Pour les vidéos verticales (9:16), une seule qualité
+est générée (la plus haute ≤ source) afin d'éviter les upscales inutiles.
+
+Endpoints administration du transcodage :
+- `GET /api/v1/admin/transcode/window` lit la fenêtre effective (`start`, `end`, `source`) ;
+- `PUT /api/v1/admin/transcode/window` {`start`, `end`} définit la fenêtre runtime (pilotable par Aion ou un Admin) ;
+- `DELETE /api/v1/admin/transcode/window` réinitialise à la config ;
+- `GET /api/v1/admin/transcode/config` lit la config transcode effective (env + surcharges runtime) : `window_start`, `window_end`, `worker_enabled`, `max_concurrency`, `poll_seconds`, `max_attempts`, `worker_nice`, `worker_cpuset`, `enable_1080p`, `enable_720p`, `enable_480p`, `source` (`config` | `runtime`) ;
+- `PUT /api/v1/admin/transcode/config` applique une mise à jour partielle (champs optionnels) et persiste le JSON en `app_settings` (clé `transcode_config`) ; retourne la config effective ;
+- `DELETE /api/v1/admin/transcode/config` supprime la surcharge runtime et retombe sur l'env ;
+- `GET /api/v1/admin/transcode/jobs` liste les 100 derniers jobs ;
+- `GET /api/v1/admin/transcode/status` expose l'état du worker (heartbeat, job running, compteurs) avec la config effective.
 
 ## Routes techniques
 
@@ -658,7 +703,7 @@ Publique, sans authentification.
   "data": {
     "status": "ok",
     "service": "nino-backend",
-    "version": "8.0.0"
+    "version": "8.1.0"
   },
   "meta": {}
 }

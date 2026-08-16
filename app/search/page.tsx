@@ -39,14 +39,14 @@ function SearchContent() {
   return (
     <AppShell>
       <section className="searchSurface">
-        <div className="pageHeading"><span>Explorer Nino</span><h1>Trouvez votre prochain programme</h1></div>
+        <div className="pageHeading"><h1>Recherche</h1><p>Trouvez rapidement une vidéo par titre, description ou catégorie.</p></div>
         <form className="searchBox" onSubmit={submit}>
           <Search size={22} aria-hidden="true" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Émission, série, créateur ou catégorie" aria-label="Recherche" autoFocus />
           <button className="primaryButton" type="submit">Rechercher</button>
         </form>
         {error ? <ErrorState message={error} /> : null}
-        {!error && searched && items.length === 0 ? <EmptyState title="Aucun resultat" message="Essaie un titre plus court ou relance un scan cote backend." /> : null}
+        {!error && searched && items.length === 0 ? <EmptyState title="Aucun résultat" message="Essayez un titre plus court ou une autre catégorie." /> : null}
         <div className="resultGrid">
           {items.map((item) => (
             <MediaCard item={item} key={item.id} />

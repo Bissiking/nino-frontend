@@ -30,7 +30,8 @@ export function TvNavigation() {
       if (!directions.has(event.key)) return;
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 
-      const elements = Array.from(document.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => {
+      const scope = document.querySelector<HTMLElement>("[aria-modal='true']") ?? document;
+      const elements = Array.from(scope.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => {
         const style = window.getComputedStyle(element);
         const rect = element.getBoundingClientRect();
         return style.visibility !== "hidden" && style.display !== "none" && rect.width > 0 && rect.height > 0;

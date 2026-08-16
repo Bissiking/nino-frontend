@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Info, Play } from "lucide-react";
+import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
 
 export function HeroConsole({ item }: { item: MediaItem | null }) {
@@ -10,9 +10,8 @@ export function HeroConsole({ item }: { item: MediaItem | null }) {
 
   return (
     <section className="heroConsole" aria-labelledby="hero-title">
-      {item.backdrop_url ? <Image src={item.backdrop_url} alt="" fill priority sizes="(max-width: 900px) 100vw, calc(100vw - 232px)" className="heroBackdrop" /> : null}
+      {api.assetUrl(item.backdrop_url) ? <img src={api.assetUrl(item.backdrop_url) ?? ""} alt="" className="heroBackdrop" /> : null}
       <div className="heroContent">
-        <div className="ninoOriginal"><Image src="/logo_nino_small.png" alt="" width={18} height={22} /> Original</div>
         <h1 id="hero-title">{item.title}</h1>
         <div className="heroFacts">
           {item.rating ? <strong>{item.rating}/10</strong> : null}

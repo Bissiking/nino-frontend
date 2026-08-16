@@ -1,3 +1,4 @@
+.backup
 .next/
 node_modules/
 .env*

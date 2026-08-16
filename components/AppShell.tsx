@@ -2,26 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Clapperboard, Compass, Gamepad2, History, Home, LogOut, PanelsTopLeft, Radio, Search, UserRound, Zap } from "lucide-react";
-import { api } from "@/lib/api";
-import { clearSession, getRefreshToken } from "@/lib/session";
+import { usePathname } from "next/navigation";
+import { Compass, Home, PanelsTopLeft, Search, Zap } from "lucide-react";
+import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
+import pkg from "@/package.json";
 
 const primaryNav = [
   { href: "/", label: "Accueil", icon: Home },
-  { href: "/flashy", label: "Flashy", icon: Zap },
-  { href: "/search", label: "Explorer", icon: Compass },
-  { href: "/#series", label: "Séries gaming", icon: Gamepad2 },
-  { href: "/#movies", label: "Émissions", icon: Clapperboard },
-  { href: "/#live", label: "En direct", icon: Radio }
+  { href: "/search", label: "Recherche", icon: Search },
+  { href: "/#latest", label: "Vidéos", icon: Compass },
+  { href: "/#series", label: "Séries", icon: Compass },
+  { href: "/#live", label: "Live", icon: Compass },
+  { href: "/flashy", label: "Flashy", icon: Zap }
 ];
 
-const secondaryNav = [
-  { href: "/#continue", label: "Reprendre", icon: History },
-  { href: "/profiles", label: "Changer de profil", icon: UserRound },
-  { href: "/studio", label: "Nino Studio", icon: PanelsTopLeft }
-];
+const mobileNav = [primaryNav[0], primaryNav[5], primaryNav[1], primaryNav[3]];
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -30,62 +26,37 @@ function isActive(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function logout() {
-    const refreshToken = getRefreshToken();
-    try {
-      if (refreshToken) await api.logout(refreshToken);
-    } finally {
-      clearSession();
-      router.push("/login");
-    }
-  }
+  const isStudio = pathname.startsWith("/studio");
 
   return (
-    <div className="shell">
+    <div className={`shell ${isStudio ? "isStudioShell" : ""}`}>
       <TvNavigation />
       <header className="topBar">
         <Link href="/" className="brand" aria-label="Nino — accueil">
           <Image src="/logo_nino.png" alt="Nino" width={111} height={42} priority />
         </Link>
-        <Link href="/search" className="globalSearch" aria-label="Rechercher dans Nino">
-          <Search size={19} aria-hidden="true" />
-          <span>Rechercher une émission, une série, un créateur…</span>
-          <kbd>/</kbd>
-        </Link>
+        <nav className="desktopNav" aria-label="Navigation principale">
+          {primaryNav.map((item) => {
+            const active = isActive(pathname, item.href);
+            return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-current={active ? "page" : undefined}>{item.label}</Link>;
+          })}
+        </nav>
         <div className="topActions">
           <Link className="studioShortcut" href="/studio" aria-label="Ouvrir Nino Studio"><PanelsTopLeft size={20} aria-hidden="true" /></Link>
-          <Link className="profileAvatar" href="/profiles" aria-label="Changer de profil"><UserRound size={21} aria-hidden="true" /></Link>
+          <ProfileMenu />
         </div>
       </header>
 
-      <aside className="sidebar" aria-label="Navigation principale">
-        <nav className="navList">
-          {primaryNav.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(pathname, item.href);
-            return <Link className={`navItem ${active ? "active" : ""}`} href={item.href} key={item.label} aria-current={active ? "page" : undefined}><Icon size={20} aria-hidden="true" /><span>{item.label}</span></Link>;
-          })}
-        </nav>
-        <div className="navDivider" />
-        <p className="navLabel">Ma Nino</p>
-        <nav className="navList">
-          {secondaryNav.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(pathname, item.href);
-            return <Link className={`navItem ${active ? "active" : ""}`} href={item.href} key={item.label} aria-current={active ? "page" : undefined}><Icon size={20} aria-hidden="true" /><span>{item.label}</span></Link>;
-          })}
-        </nav>
-        <button className="navItem logoutButton" type="button" onClick={logout}>
-          <LogOut size={20} aria-hidden="true" /><span>Déconnexion</span>
-        </button>
-      </aside>
-
       <main className={`mainSurface ${pathname === "/" ? "homeSurface" : ""}`}>{children}</main>
 
+      <footer className="ninoFooter" aria-label="Pied de page Nino">
+        <div className="ninoFooterBrand"><Image src="/logo_nino_small.png" alt="" width={34} height={34} /><span><strong>Nino</strong><small>Version {pkg.version}</small></span></div>
+        <nav aria-label="Liens rapides"><Link href="/">Accueil</Link><Link href="/search">Recherche</Link><Link href="/#latest">Vidéos</Link><Link href="/#series">Séries</Link><Link href="/#live">Live</Link><Link href="/flashy">Flashy</Link></nav>
+        <small>Frontend indépendant Nino</small>
+      </footer>
+
       <nav className="bottomNav" aria-label="Navigation mobile">
-        {primaryNav.slice(0, 4).map((item) => {
+        {mobileNav.map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);
           return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-label={item.label} aria-current={active ? "page" : undefined}><Icon size={21} aria-hidden="true" /><span>{item.label}</span></Link>;

@@ -1,46 +1,45 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   CalendarClock,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   CircleOff,
   Clapperboard,
   Database,
-  Download,
   Film,
+  GripVertical,
   LayoutDashboard,
+  ListFilter,
   ListVideo,
+  Loader2,
   Plus,
   Radio,
+  RefreshCw,
+  Save,
   ScanLine,
   Search,
   Settings,
-  Sparkles,
   Users,
-  X,
   Zap
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorState } from "@/components/StateBlock";
-import { V7MigrationWorkspace } from "@/components/studio/V7MigrationWorkspace";
-import { V7ImportWorkspace } from "@/components/studio/V7ImportWorkspace";
+import { MediaEditor } from "@/components/studio/MediaEditor";
 import { api } from "@/lib/api";
-import type { MediaItem } from "@/types/nino";
+import { VISIBILITY_LABELS } from "@/types/nino";
+import type { AdminEpisodes, MediaItem, StorageIndexReport } from "@/types/nino";
 
-type StudioView = "overview" | "series" | "flashy" | "videos" | "schedule" | "live" | "import" | "administration";
-
-function moveStudioTabFocus(event: KeyboardEvent<HTMLElement>) {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-  const controls = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
-  const index = controls.indexOf(document.activeElement as HTMLButtonElement);
-  if (index < 0) return;
-  const next = controls[(index + (event.key === "ArrowLeft" ? -1 : 1) + controls.length) % controls.length];
-  event.preventDefault();
-  next.focus();
-}
+type StudioView = "overview" | "videos" | "series" | "flashy" | "schedule" | "live" | "administration";
+type EditorialLane = "prepare" | "scheduled" | "published";
+type VisibilityFilter = "all" | "public" | "private" | "draft";
+type CreateKind = "movie" | "short" | "series";
 
 type Stats = {
   users: number;
@@ -53,35 +52,34 @@ type Stats = {
 type StudioSection = {
   id: StudioView;
   label: string;
+  shortLabel: string;
   icon: LucideIcon;
 };
 
 const sections: StudioSection[] = [
-  { id: "overview", label: "Vue d’ensemble", icon: LayoutDashboard },
-  { id: "series", label: "Séries", icon: Clapperboard },
-  { id: "flashy", label: "Flashy", icon: Zap },
-  { id: "videos", label: "Vidéos", icon: Film },
-  { id: "schedule", label: "Programmation", icon: CalendarClock },
-  { id: "live", label: "Direct", icon: Radio },
-  { id: "import", label: "Import V7", icon: Download },
-  { id: "administration", label: "Administration", icon: Settings }
+  { id: "overview", label: "Tableau éditorial", shortLabel: "Tableau", icon: LayoutDashboard },
+  { id: "videos", label: "Bibliothèque", shortLabel: "Vidéos", icon: Film },
+  { id: "series", label: "Séries", shortLabel: "Séries", icon: Clapperboard },
+  { id: "flashy", label: "Flashy", shortLabel: "Flashy", icon: Zap },
+  { id: "schedule", label: "Programmation", shortLabel: "Planning", icon: CalendarClock },
+  { id: "live", label: "Direct", shortLabel: "Direct", icon: Radio },
+  { id: "administration", label: "Système", shortLabel: "Système", icon: Settings }
 ];
 
-const unavailableMetadata = [
-  "Identifiant et URL Nino V7",
-  "Fichier source et informations techniques",
-  "Émission, saison et numéro d’épisode",
-  "Date de sortie et fenêtre de publication",
-  "Créateur, participants et crédits",
-  "Visibilité, droits et restrictions"
-];
+const laneCopy: Record<EditorialLane, { label: string; description: string }> = {
+  prepare: { label: "À préparer", description: "Brouillons, privés ou indisponibles" },
+  scheduled: { label: "Programmé", description: "Une date de diffusion est définie" },
+  published: { label: "Publié", description: "Visible et lisible dans Nino" }
+};
 
-function formatDuration(seconds: number) {
-  if (!seconds) return "Non renseignée";
-  if (seconds < 60) return `${seconds} s`;
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return hours ? `${hours} h ${minutes.toString().padStart(2, "0")}` : `${minutes} min`;
+function moveStudioNavFocus(event: KeyboardEvent<HTMLElement>) {
+  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+  const controls = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
+  const index = controls.indexOf(document.activeElement as HTMLButtonElement);
+  if (index < 0) return;
+  const backwards = event.key === "ArrowLeft" || event.key === "ArrowUp";
+  event.preventDefault();
+  controls[(index + (backwards ? -1 : 1) + controls.length) % controls.length]?.focus();
 }
 
 function kindLabel(kind: string) {
@@ -89,200 +87,352 @@ function kindLabel(kind: string) {
   return labels[kind] ?? kind;
 }
 
-function ApiDependency({ children }: { children: React.ReactNode }) {
-  return <span className="studioDependency"><CircleOff size={14} aria-hidden="true" />{children}</span>;
+function visibilityLabel(visibility: string) {
+  return VISIBILITY_LABELS[visibility] ?? visibility;
+}
+
+function formatPublishDate(value: string | null, compact = false) {
+  if (!value) return "Sans date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date invalide";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    ...(compact ? {} : { year: "numeric" }),
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function sourceLabel(item: MediaItem) {
+  if (item.source_kind === "hls") return "HLS";
+  if (item.source_kind === "file") return "Fichier";
+  return "Sans source";
+}
+
+function transcodeLabel(item: MediaItem): { text: string; cls: string } | null {
+  if (item.source_kind === "hls" && item.hls_status === "ready") return null;
+  switch (item.encoding_status) {
+    case "pending":
+      return { text: "Transcode en attente", cls: "isPending" };
+    case "running":
+      return { text: "En transcode", cls: "isRunning" };
+    case "failed":
+      return { text: "Transcode échoué", cls: "isFailed" };
+    default:
+      return null;
+  }
+}
+
+function laneFor(item: MediaItem, now: number): EditorialLane {
+  const publication = item.publish_at ? new Date(item.publish_at).getTime() : 0;
+  if (publication > now) return "scheduled";
+  if (item.visibility === "public" && item.is_available && Boolean(item.source_kind)) return "published";
+  return "prepare";
 }
 
 function LoadingStudio() {
+  return <div className="studioControlSkeleton" aria-label="Chargement de Nino Studio" aria-busy="true"><span /><span /><span /><span /></div>;
+}
+
+function MediaArtwork({ item }: { item: MediaItem }) {
+  const posterUrl = api.assetUrl(item.poster_url);
+  const style = posterUrl ? { backgroundImage: `url(${JSON.stringify(posterUrl)})` } : undefined;
+  return <span className={`studioControlArtwork ${item.kind === "short" ? "isPortrait" : ""}`} style={style}>{posterUrl ? null : item.kind === "short" ? <Zap size={18} aria-hidden="true" /> : <Film size={18} aria-hidden="true" />}</span>;
+}
+
+function EditorialItem({ item, now }: { item: MediaItem; now: number }) {
+  const lane = laneFor(item, now);
   return (
-    <div className="studioSkeleton" aria-label="Chargement de Nino Studio" aria-busy="true">
-      <span /><span /><span /><span /><span />
-    </div>
+    <li className="studioQueueItem">
+      <Link href={`/studio/media/${encodeURIComponent(item.id)}`} aria-label={`Modifier ${item.title}`}>
+        <MediaArtwork item={item} />
+        <span className="studioQueueCopy">
+          <strong>{item.title}</strong>
+          <small>{kindLabel(item.kind)} · {sourceLabel(item)}{transcodeLabel(item) ? <span className={`studioTranscodeBadge ${transcodeLabel(item)!.cls}`}>{transcodeLabel(item)!.text}</span> : null}</small>
+        </span>
+        <span className="studioQueueMeta"><span className={`studioControlStatus is${item.visibility}`}><i aria-hidden="true" />{visibilityLabel(item.visibility)}</span><span className="studioQueueDate">{lane === "scheduled" ? formatPublishDate(item.publish_at, true) : item.is_available ? "Disponible" : "Indisponible"}</span></span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link>
+    </li>
   );
 }
 
-function MediaInspector({ media, onClose }: { media: MediaItem; onClose: () => void }) {
-  const knownFields = [
-    ["Identifiant V8", media.id],
-    ["Type", kindLabel(media.kind)],
-    ["Titre", media.title],
-    ["Année", media.year?.toString() ?? "Non renseignée"],
-    ["Durée", formatDuration(media.duration_seconds)],
-    ["Genres", media.genres.length ? media.genres.join(", ") : "Non renseignés"],
-    ["Note", media.rating === null ? "Non renseignée" : `${media.rating}/10`],
-    ["Disponibilité", media.is_available ? "Disponible" : "Indisponible"],
-    ["Affiche", media.poster_url ?? "Non renseignée"],
-    ["Arrière-plan", media.backdrop_url ?? "Non renseigné"]
-  ];
+function EditorialBoard({ items, now }: { items: MediaItem[]; now: number }) {
+  const [activeLane, setActiveLane] = useState<EditorialLane>("prepare");
+  const lanes = useMemo(() => ({
+    prepare: items.filter((item) => laneFor(item, now) === "prepare"),
+    scheduled: items.filter((item) => laneFor(item, now) === "scheduled").sort((a, b) => new Date(a.publish_at!).getTime() - new Date(b.publish_at!).getTime()),
+    published: items.filter((item) => laneFor(item, now) === "published")
+  }), [items, now]);
 
   return (
-    <aside className="studioInspector" aria-label={`Fiche de préparation de ${media.title}`}>
-      <header className="studioInspectorHeader">
-        <div>
-          <span className="studioStatus isDraft">Préparation d’import</span>
-          <h2>{media.title}</h2>
-        </div>
-        <button className="studioIconButton" type="button" onClick={onClose} aria-label="Fermer la fiche"><X size={19} /></button>
-      </header>
-
-      <section className="studioInspectorSection">
-        <h3>Informations disponibles</h3>
-        <dl className="studioMetadata">
-          {knownFields.map(([label, value]) => (
-            <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
-          ))}
-          <div className="studioMetadataWide"><dt>Synopsis</dt><dd>{media.synopsis || "Non renseigné"}</dd></div>
-        </dl>
-      </section>
-
-      <section className="studioInspectorSection">
-        <h3>Informations attendues de Nino V7</h3>
-        <ul className="studioCheckList">
-          {unavailableMetadata.map((label) => <li key={label}><CircleOff size={16} aria-hidden="true" /><span>{label}<small>Non fourni par l’API actuelle</small></span></li>)}
-        </ul>
-      </section>
-
-      <footer className="studioInspectorFooter">
-        <button className="primaryButton" type="button" disabled title="Endpoint de mise à jour requis">Enregistrer la fiche</button>
-        <ApiDependency>API d’écriture à connecter</ApiDependency>
-      </footer>
-    </aside>
-  );
-}
-
-function MediaWorkspace({ title, description, items, createLabel }: { title: string; description: string; items: MediaItem[]; createLabel: string }) {
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<MediaItem | null>(null);
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return items;
-    return items.filter((item) => `${item.title} ${item.synopsis} ${item.genres.join(" ")}`.toLowerCase().includes(normalized));
-  }, [items, query]);
-
-  return (
-    <div className={`studioWorkArea ${selected ? "hasInspector" : ""}`}>
-      <section className="studioListPanel">
-        <header className="studioSectionHeader">
-          <div><h2>{title}</h2><p>{description}</p></div>
-          <div className="studioHeaderAction">
-            <button className="primaryButton" type="button" disabled title="Endpoint de création requis"><Plus size={18} aria-hidden="true" />{createLabel}</button>
-            <ApiDependency>Création non connectée</ApiDependency>
-          </div>
-        </header>
-
-        <label className="studioSearch">
-          <Search size={18} aria-hidden="true" />
-          <span className="srOnly">Rechercher dans cette liste</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher par titre, synopsis ou genre" />
-        </label>
-
-        {filtered.length ? (
-          <div className="studioTableWrap">
-            <table className="studioTable">
-              <thead><tr><th>Contenu</th><th>Type</th><th>Durée</th><th>État</th><th><span className="srOnly">Action</span></th></tr></thead>
-              <tbody>
-                {filtered.map((item) => (
-                  <tr key={item.id} className={selected?.id === item.id ? "isSelected" : undefined}>
-                    <td><strong>{item.title}</strong><small>{item.year ?? "Année inconnue"} · {item.genres.join(", ") || "Sans genre"}</small></td>
-                    <td>{kindLabel(item.kind)}</td>
-                    <td>{formatDuration(item.duration_seconds)}</td>
-                    <td><span className={`studioStatus ${item.is_available ? "isReady" : "isDraft"}`}>{item.is_available ? "Disponible" : "Indisponible"}</span></td>
-                    <td><button className="studioRowAction" type="button" onClick={() => setSelected(item)} aria-label={`Ouvrir la fiche de ${item.title}`}><ChevronRight size={19} /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="studioEmpty"><ListVideo size={26} aria-hidden="true" /><h3>Aucun contenu trouvé</h3><p>{query ? "Modifiez votre recherche pour retrouver un contenu." : "Cette liste se remplira depuis le catalogue Nino."}</p></div>
-        )}
-      </section>
-      {selected ? <MediaInspector media={selected} onClose={() => setSelected(null)} /> : null}
-    </div>
-  );
-}
-
-function ScheduleWorkspace() {
-  return (
-    <section className="studioOperationalEmpty">
-      <div className="studioEmptyVisual"><CalendarClock size={34} aria-hidden="true" /></div>
-      <div><h2>Programmation des sorties</h2><p>Le calendrier accueillera les brouillons, dates de publication, reports et sorties déjà publiées.</p></div>
-      <button className="primaryButton" type="button" disabled title="Endpoint de programmation requis"><Plus size={18} />Programmer une sortie</button>
-      <ApiDependency>Modèle et endpoints de programmation requis</ApiDependency>
+    <section className="studioBoard" aria-label="Cycle de publication">
+      <div className="studioLaneSwitcher" role="tablist" aria-label="Files éditoriales" onKeyDown={moveStudioNavFocus}>
+        {(Object.keys(lanes) as EditorialLane[]).map((lane) => <button key={lane} type="button" role="tab" aria-selected={activeLane === lane} className={activeLane === lane ? "isActive" : undefined} onClick={() => setActiveLane(lane)}>{laneCopy[lane].label}<span>{lanes[lane].length}</span></button>)}
+      </div>
+      <div className="studioBoardLanes">
+        {(Object.keys(lanes) as EditorialLane[]).map((lane) => (
+          <section key={lane} className={`studioLane ${activeLane === lane ? "isActiveLane" : ""}`} aria-labelledby={`studio-lane-${lane}`}>
+            <header>
+              <div><h2 id={`studio-lane-${lane}`}>{laneCopy[lane].label}</h2><p>{laneCopy[lane].description}</p></div>
+              <strong>{lanes[lane].length}</strong>
+            </header>
+            {lanes[lane].length ? <ul>{lanes[lane].map((item) => <EditorialItem key={item.id} item={item} now={now} />)}</ul> : <div className="studioLaneEmpty"><ListVideo size={23} aria-hidden="true" /><p>{lane === "prepare" ? "Tout est prêt pour la diffusion." : lane === "scheduled" ? "Aucune sortie n’est programmée." : "Aucun contenu publié dans cette sélection."}</p></div>}
+          </section>
+        ))}
+      </div>
     </section>
   );
 }
 
-function LiveWorkspace({ liveItems }: { liveItems: MediaItem[] }) {
-  const catalogLive = liveItems[0];
+function StudioWorkspace({ media, now, view, onCreate }: { media: MediaItem[]; now: number; view: StudioView; onCreate: (kind: "movie" | "short") => void }) {
+  const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<VisibilityFilter>("all");
+  const scope = useMemo(() => {
+    if (view === "series") return media.filter((item) => item.kind === "series");
+    if (view === "flashy") return media.filter((item) => item.kind === "short");
+    if (view === "videos") return media.filter((item) => !["series", "short", "live"].includes(item.kind));
+    return media.filter((item) => item.kind !== "live");
+  }, [media, view]);
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return scope.filter((item) => {
+      const visible = visibility === "all" || item.visibility === visibility;
+      const matches = !normalized || `${item.title} ${item.synopsis} ${item.genres.join(" ")}`.toLowerCase().includes(normalized);
+      return visible && matches;
+    });
+  }, [query, scope, visibility]);
+
+  const titles: Record<"overview" | "videos" | "series" | "flashy", [string, string]> = {
+    overview: ["Tableau éditorial", "Pilotez la préparation, la programmation et la mise en ligne."],
+    videos: ["Bibliothèque vidéo", "Retrouvez les programmes longs et leurs états de publication."],
+    series: ["Séries", "Suivez les programmes déclarés comme séries dans le catalogue V8."],
+    flashy: ["Flashy", "Préparez les formats courts verticaux pour le flux Flashy."]
+  };
+  const [title, description] = titles[view as keyof typeof titles];
+
   return (
-    <div className="studioLiveLayout">
-      <section className="studioLiveStage">
-        <header><span className="studioStatus isIdle">Hors ligne</span><strong>0 / 1 flux OBS actif</strong></header>
-        <div className="studioLivePreview"><Radio size={38} aria-hidden="true" /><h2>Aucun signal OBS</h2><p>L’état d’ingestion et la clé de stream seront affichés ici dès que le backend live sera disponible.</p></div>
-      </section>
-      <aside className="studioLiveControls">
-        <h2>Configuration du direct</h2>
-        <dl>
-          <div><dt>Limite</dt><dd>1 stream simultané</dd></div>
-          <div><dt>Entrée catalogue</dt><dd>{catalogLive?.title ?? "Aucune"}</dd></div>
-          <div><dt>État OBS</dt><dd>Non disponible</dd></div>
-        </dl>
-        <button className="primaryButton wide" type="button" disabled title="Endpoint live requis">Configurer le flux OBS</button>
-        <ApiDependency>API d’ingestion live à connecter</ApiDependency>
-      </aside>
-    </div>
+    <>
+      <header className="studioCommandHeader">
+        <div><h1>{title}</h1><p>{description}</p></div>
+        <div className="studioCommandActions">
+          {view !== "series" ? <button className="primaryButton" type="button" onClick={() => onCreate(view === "flashy" ? "short" : "movie")}><Plus size={18} aria-hidden="true" />{view === "flashy" ? "Nouveau Flashy" : "Nouvelle vidéo"}</button> : null}
+        </div>
+      </header>
+      <div className="studioCommandBar">
+        <label className="studioControlSearch"><Search size={18} aria-hidden="true" /><span className="srOnly">Rechercher dans le Studio</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un titre, un synopsis ou un genre" /></label>
+        <label className="studioControlSelect"><ListFilter size={17} aria-hidden="true" /><span className="srOnly">Filtrer par visibilité</span><select value={visibility} onChange={(event) => setVisibility(event.target.value as VisibilityFilter)}><option value="all">Toutes les visibilités</option><option value="draft">Brouillons</option><option value="private">Privées</option><option value="public">Publiques</option></select></label>
+        <span className="studioResultCount">{filtered.length} sur {scope.length}</span>
+      </div>
+      <EditorialBoard items={filtered} now={now} />
+    </>
   );
 }
 
-function AdministrationWorkspace({ stats }: { stats: Stats }) {
-  const statRows: Array<[string, number, LucideIcon]> = [
-    ["Utilisateurs", stats.users, Users],
-    ["Bibliothèques", stats.libraries, Database],
-    ["Médias", stats.media, Film],
-    ["Scans", stats.scan_jobs, ScanLine],
-    ["Transcodages", stats.transcode_jobs, Activity]
-  ];
+function ScheduleWorkspace({ media, now }: { media: MediaItem[]; now: number }) {
+  const scheduled = media.filter((item) => item.publish_at && new Date(item.publish_at).getTime() > now).sort((a, b) => new Date(a.publish_at!).getTime() - new Date(b.publish_at!).getTime());
+  const withoutDate = media.filter((item) => item.visibility === "draft" && !item.publish_at);
+  return (
+    <>
+      <header className="studioCommandHeader"><div><h1>Programmation</h1><p>Contrôlez les prochaines diffusions et les brouillons encore sans date.</p></div></header>
+      <div className="studioScheduleGrid">
+        <section className="studioSchedulePanel"><header><div><h2>Prochaines sorties</h2><p>{scheduled.length} contenu{scheduled.length > 1 ? "s" : ""} planifié{scheduled.length > 1 ? "s" : ""}</p></div><CalendarClock size={20} aria-hidden="true" /></header>{scheduled.length ? <ul>{scheduled.map((item) => <EditorialItem key={item.id} item={item} now={now} />)}</ul> : <div className="studioLaneEmpty"><CalendarClock size={23} /><p>Aucune sortie à venir. Définissez une date depuis la fiche d’un média.</p></div>}</section>
+        <section className="studioSchedulePanel"><header><div><h2>Sans date</h2><p>Brouillons à programmer</p></div><ListVideo size={20} aria-hidden="true" /></header>{withoutDate.length ? <ul>{withoutDate.map((item) => <EditorialItem key={item.id} item={item} now={now} />)}</ul> : <div className="studioLaneEmpty"><ListVideo size={23} /><p>Tous les brouillons ont une date de publication.</p></div>}</section>
+      </div>
+    </>
+  );
+}
+
+function LiveWorkspace({ liveItems }: { liveItems: MediaItem[] }) {
+  return (
+    <>
+      <header className="studioCommandHeader"><div><h1>Direct</h1><p>Surveillez l’entrée live du catalogue et la future connexion OBS.</p></div></header>
+      <div className="studioLiveControlRoom">
+        <section className="studioLiveMonitor"><header><span className="studioControlStatus isdraft"><i />Statut non exposé</span><strong>API live requise</strong></header><div><Radio size={38} aria-hidden="true" /><h2>Signal non vérifiable</h2><p>L’ingestion OBS n’est pas encore exposée par l’API. Aucun contrôle ne sera simulé ici.</p></div></section>
+        <aside className="studioSystemRail"><header><h2>Entrées du catalogue</h2><span>{liveItems.length}</span></header>{liveItems.length ? <ul>{liveItems.map((item) => <EditorialItem key={item.id} item={item} now={Date.now()} />)}</ul> : <div className="studioLaneEmpty"><Radio size={23} /><p>Aucune entrée de type direct.</p></div>}<div className="studioDependency"><CircleOff size={15} />API d’ingestion live requise</div></aside>
+      </div>
+    </>
+  );
+}
+
+function SeriesWorkspace({ series, onOpen, onCreate }: { series: MediaItem[]; onOpen: (id: string) => void; onCreate: () => void }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [data, setData] = useState<AdminEpisodes | null>(null);
+  const [order, setOrder] = useState<Record<number, string[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+
+  const selected = series.find((item) => item.id === selectedId) ?? null;
+  const episodesById = useMemo(() => {
+    const map: Record<string, MediaItem> = {};
+    (data?.episodes ?? []).forEach((episode) => {
+      map[episode.id] = episode;
+    });
+    return map;
+  }, [data]);
+
+  function open(id: string) {
+    setSelectedId(id);
+    setError(null);
+    setSaved(null);
+    setLoading(true);
+    api.adminMediaEpisodes(id)
+      .then((payload) => {
+        setData(payload);
+        const initial: Record<number, string[]> = {};
+        payload.seasons.forEach((season) => {
+          initial[season.season_number] = [...season.episode_ids];
+        });
+        setOrder(initial);
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Impossible de charger les épisodes."))
+      .finally(() => setLoading(false));
+  }
+
+  function moveEpisode(season: number, from: number, to: number) {
+    if (to < 0 || to >= (order[season]?.length ?? 0)) return;
+    setOrder((current) => {
+      const ids = [...(current[season] ?? [])];
+      const [moved] = ids.splice(from, 1);
+      if (!moved) return current;
+      ids.splice(to, 0, moved);
+      return { ...current, [season]: ids };
+    });
+    setSaved(null);
+  }
+
+  async function saveSeason(season: number) {
+    if (!selected) return;
+    const ids = order[season] ?? [];
+    setSaving(true);
+    setError(null);
+    setSaved(null);
+    try {
+      await api.adminReorderEpisodes(selected.id, season, ids);
+      setSaved(`Saison ${season} réordonnée.`);
+      open(selected.id);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Le réordonnancement a échoué.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <div className="studioAdminLayout">
-      <section className="studioAdminStats">
-        <header><h2>État de Nino</h2><p>Informations fournies par l’administration V8.</p></header>
-        <dl>{statRows.map(([label, value, Icon]) => <div key={label}><Icon size={20} aria-hidden="true" /><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+    <>
+      <header className="studioCommandHeader">
+        <div><h1>Séries</h1><p>Créez des contenants de série puis gérez l’ordre des épisodes par saison.</p></div>
+        <button className="primaryButton" type="button" onClick={onCreate}><Plus size={18} aria-hidden="true" />Nouvelle série</button>
+      </header>
+      <div className="studioSeriesGrid">
+        <ul className="studioSeriesList">
+          {series.length ? series.map((item) => (
+            <li key={item.id} className={item.id === selectedId ? "isActive" : undefined}>
+              <button type="button" onClick={() => open(item.id)} aria-current={item.id === selectedId ? "true" : undefined}>
+                <span className="studioSeriesListPoster">{api.assetUrl(item.poster_url) ? <span style={{ backgroundImage: `url(${JSON.stringify(api.assetUrl(item.poster_url))})` }} /> : <Film size={18} aria-hidden="true" />}</span>
+                <span><strong>{item.title}</strong><small>{item.no_spoil ? "No Spoil activé · " : ""}{VISIBILITY_LABELS[item.visibility] ?? item.visibility}</small></span>
+              </button>
+              <Link href={`/studio/media/${encodeURIComponent(item.id)}`} aria-label={`Modifier ${item.title}`}><span className="srOnly">Modifier</span><ChevronRight size={16} /></Link>
+            </li>
+          )) : (
+            <li className="studioSeriesEmpty"><ListVideo size={22} /><p>Aucune série. Créez-en une pour commencer.</p></li>
+          )}
+        </ul>
+        <aside className="studioSeriesDetail" aria-live="polite">
+          {!selected ? <div className="studioSeriesEmpty"><Clapperboard size={26} /><p>Sélectionnez une série pour réordonner ses saisons et épisodes.</p></div> : null}
+          {loading ? <LoadingStudio /> : null}
+          {error && !loading ? <p className="studioStorageIndexResult isError" role="alert">{error}</p> : null}
+          {saved ? <p className="studioStorageIndexResult" role="status">{saved}</p> : null}
+          {!loading && !error && data ? data.seasons.map((season) => (
+            <section key={season.season_number} className="studioSeasonPanel">
+              <header>
+                <div><h2>Saison {season.season_number}</h2><p>{episodesById[order[season.season_number]?.[0]] ? `${order[season.season_number].length} épisode${order[season.season_number].length > 1 ? "s" : ""}` : "Aucun épisode"}</p></div>
+                <button className="secondaryButton" type="button" onClick={() => void saveSeason(season.season_number)} disabled={saving}>{saving ? <Loader2 className="spin" size={16} /> : <Save size={16} />}Enregistrer l’ordre</button>
+              </header>
+              <ol className="studioEpisodeOrder">
+                {(order[season.season_number] ?? []).map((episodeId, index) => {
+                  const episode = episodesById[episodeId];
+                  return (
+                    <li key={episodeId}>
+                      <GripVertical size={15} aria-hidden="true" />
+                      <span className="studioEpisodeNumber">E{index + 1}</span>
+                      <span className="studioEpisodeTitle">{episode?.title ?? episodeId}</span>
+                      <span className="studioEpisodeMoves">
+                        <button type="button" onClick={() => moveEpisode(season.season_number, index, index - 1)} disabled={index === 0} aria-label="Monter"><ChevronUp size={16} /></button>
+                        <button type="button" onClick={() => moveEpisode(season.season_number, index, index + 1)} disabled={index === (order[season.season_number]?.length ?? 0) - 1} aria-label="Descendre"><ChevronDown size={16} /></button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )) : null}
+        </aside>
+      </div>
+    </>
+  );
+}
+
+function AdministrationWorkspace({ stats, indexing, indexReport, indexError, onIndexStorage }: { stats: Stats; indexing: boolean; indexReport: StorageIndexReport | null; indexError: string | null; onIndexStorage: () => void }) {
+  const rows: Array<[string, number, LucideIcon, string]> = [
+    ["Médias", stats.media, Film, "Contenus enregistrés"],
+    ["Utilisateurs", stats.users, Users, "Comptes Nino"],
+    ["Bibliothèques", stats.libraries, Database, "Sources configurées"],
+    ["Scans", stats.scan_jobs, ScanLine, "Jobs connus"],
+    ["Transcodages", stats.transcode_jobs, Activity, "Jobs connus"]
+  ];
+  return (
+    <>
+      <header className="studioCommandHeader"><div><h1>Système</h1><p>État administratif réellement exposé par Nino V8.</p></div></header>
+      <section className="studioSystemTable"><header><span>Ressource</span><span>État</span><span>Volume</span></header>{rows.map(([label, value, Icon, description]) => <div key={label}><Icon size={19} aria-hidden="true" /><span><strong>{label}</strong><small>{description}</small></span><span className="studioSystemUnknown">Non exposé par l’API</span><b>{value}</b></div>)}</section>
+      <section className="studioStorageIndexer" aria-labelledby="studio-storage-index-title">
+        <div className="studioStorageIndexerCopy"><ScanLine size={22} aria-hidden="true" /><div><h2 id="studio-storage-index-title">Stockage HLS existant</h2><p>Détecte les dossiers LUMA configurés dans <code>NINO_MEDIA_DIR</code>, sans déplacer ni réencoder les segments.</p></div></div>
+        <button className="secondaryButton" type="button" onClick={onIndexStorage} disabled={indexing}>{indexing ? <Loader2 className="spin" size={18} aria-hidden="true" /> : <ScanLine size={18} aria-hidden="true" />}{indexing ? "Indexation…" : "Indexer le stockage"}</button>
+        {indexReport ? <p className={indexReport.errors.length ? "studioStorageIndexResult hasWarnings" : "studioStorageIndexResult"} role="status">{indexReport.discovered} dossier{indexReport.discovered > 1 ? "s" : ""} détecté{indexReport.discovered > 1 ? "s" : ""} · {indexReport.created} créé{indexReport.created > 1 ? "s" : ""} · {indexReport.updated} actualisé{indexReport.updated > 1 ? "s" : ""}{indexReport.errors.length ? ` · ${indexReport.errors.length} erreur${indexReport.errors.length > 1 ? "s" : ""}` : ""}</p> : null}
+        {indexError ? <p className="studioStorageIndexResult isError" role="alert">{indexError}</p> : null}
       </section>
-      <V7MigrationWorkspace />
-    </div>
+    </>
   );
 }
 
 export default function StudioPage() {
+  const router = useRouter();
   const [view, setView] = useState<StudioView>("overview");
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [creating, setCreating] = useState<CreateKind | null>(null);
+  const [indexingStorage, setIndexingStorage] = useState(false);
+  const [storageIndexReport, setStorageIndexReport] = useState<StorageIndexReport | null>(null);
+  const [storageIndexError, setStorageIndexError] = useState<string | null>(null);
+  const [now] = useState(() => Date.now());
 
-  function load() {
-    setLoading(true);
+  function load(background = false) {
+    if (background) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     setAccessDenied(false);
-    api.me()
-      .then((user) => {
-        if (!user.is_admin) {
-          setAccessDenied(true);
-          return null;
-        }
-        return Promise.all([api.media(), api.adminStats()]);
-      })
-      .then((payload) => {
-        if (payload) {
-          setMedia(payload[0]);
-          setStats(payload[1]);
-        }
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Nino Studio est indisponible."))
-      .finally(() => setLoading(false));
+    api.me().then((user) => {
+      if (!user.is_admin) {
+        setAccessDenied(true);
+        return null;
+      }
+      return Promise.all([api.adminMedia(), api.adminStats()]);
+    }).then((payload) => {
+      if (payload) {
+        setMedia(payload[0]);
+        setStats(payload[1]);
+      }
+    })
+      .then(() => api.adminPublishSweep().catch(() => null))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Nino Studio est indisponible."))
+      .finally(() => { setLoading(false); setRefreshing(false); });
   }
 
   useEffect(() => {
@@ -291,62 +441,72 @@ export default function StudioPage() {
     load();
   }, []);
 
-  function selectView(nextView: StudioView) {
-    setView(nextView);
-    window.history.replaceState(null, "", `#${nextView}`);
+  function selectView(next: StudioView) {
+    setCreating(null);
+    setView(next);
+    window.history.replaceState(null, "", `#${next}`);
   }
 
-  const currentSection = sections.find((section) => section.id === view) ?? sections[0];
-  const CurrentSectionIcon = currentSection.icon;
-  const series = media.filter((item) => item.kind === "series");
-  const flashy = media.filter((item) => item.kind === "short");
+  function saveMedia(saved: MediaItem) {
+    setMedia((current) => {
+      const exists = current.some((item) => item.id === saved.id);
+      if (!exists) setStats((currentStats) => currentStats ? { ...currentStats, media: currentStats.media + 1 } : currentStats);
+      return exists ? current.map((item) => item.id === saved.id ? saved : item) : [saved, ...current];
+    });
+    setCreating(null);
+  }
+
+  async function indexStorage() {
+    setIndexingStorage(true);
+    setStorageIndexError(null);
+    setStorageIndexReport(null);
+    try {
+      const report = await api.indexMediaStorage();
+      setStorageIndexReport(report);
+      load(true);
+    } catch (reason) {
+      setStorageIndexError(reason instanceof Error ? reason.message : "L’indexation du stockage HLS a échoué.");
+    } finally {
+      setIndexingStorage(false);
+    }
+  }
+
   const live = media.filter((item) => item.kind === "live");
+  const prepared = media.filter((item) => laneFor(item, now) === "prepare").length;
+  const scheduled = media.filter((item) => laneFor(item, now) === "scheduled").length;
+  const published = media.filter((item) => laneFor(item, now) === "published").length;
 
   return (
     <AppShell>
-      <section className="studioSurface">
-        <header className="studioTitlebar">
-          <div><h1>Nino Studio</h1><p>Préparer, organiser et publier les programmes de Nino.</p></div>
-          <span className="studioAccess"><Sparkles size={16} aria-hidden="true" />Espace administrateur</span>
-        </header>
+      <section className="studioControlRoom">
+        <aside className="studioControlNav">
+          <header><strong>Studio</strong><small>Régie éditoriale</small></header>
+          <nav aria-label="Sections de Nino Studio" onKeyDown={moveStudioNavFocus}>{sections.map((section) => { const Icon = section.icon; return <button key={section.id} type="button" className={view === section.id ? "isActive" : undefined} onClick={() => selectView(section.id)} aria-current={view === section.id ? "page" : undefined}><Icon size={18} aria-hidden="true" /><span>{section.label}</span></button>; })}</nav>
+          <footer><span><i />API connectée</span><small>Administration V8</small></footer>
+        </aside>
 
-        <nav className="studioNav" aria-label="Sections de Nino Studio" onKeyDown={moveStudioTabFocus}>
-          {sections.map((section) => {
-            const Icon = section.icon;
-            return <button type="button" key={section.id} className={view === section.id ? "isActive" : undefined} onClick={() => selectView(section.id)} aria-current={view === section.id ? "page" : undefined}><Icon size={18} aria-hidden="true" /><span>{section.label}</span></button>;
-          })}
-        </nav>
+        <div className="studioControlMain">
+          <div className="studioMobileNav" role="tablist" aria-label="Sections du Studio" onKeyDown={moveStudioNavFocus}>{sections.map((section) => { const Icon = section.icon; return <button key={section.id} type="button" role="tab" aria-selected={view === section.id} className={view === section.id ? "isActive" : undefined} onClick={() => selectView(section.id)}><Icon size={18} /><span>{section.shortLabel}</span></button>; })}</div>
+          <header className="studioTopline">
+            <dl><div><dt>Médias</dt><dd>{stats?.media ?? 0}</dd></div><div><dt>À préparer</dt><dd>{prepared}</dd></div><div><dt>Programmés</dt><dd>{scheduled}</dd></div><div><dt>Publiés</dt><dd>{published}</dd></div></dl>
+            <button className="studioRefreshButton" type="button" onClick={() => load(true)} disabled={refreshing} aria-label="Rafraîchir le Studio"><RefreshCw className={refreshing ? "spin" : undefined} size={18} />{refreshing ? "Actualisation" : "À jour"}</button>
+          </header>
 
-        {loading ? <LoadingStudio /> : null}
-        {error && !loading ? <ErrorState message={error} onRetry={load} /> : null}
-        {accessDenied && !loading ? <div className="studioAccessDenied"><CircleOff size={30} aria-hidden="true" /><h2>Accès administrateur requis</h2><p>Votre compte peut regarder Nino, mais il ne peut pas ouvrir Nino Studio.</p></div> : null}
+          {loading ? <LoadingStudio /> : null}
+          {error && !loading ? <ErrorState message={error} onRetry={() => load()} /> : null}
+          {accessDenied && !loading ? <div className="studioAccessDenied"><CircleOff size={30} /><h1>Accès administrateur requis</h1><p>Votre compte peut regarder Nino, mais il ne peut pas ouvrir la régie éditoriale.</p></div> : null}
 
-        {!loading && !error && !accessDenied && stats ? (
-          <div className="studioContent">
-            {view !== "import" ? <div className="studioCurrentTitle"><CurrentSectionIcon size={20} aria-hidden="true" /><h2>{currentSection.label}</h2></div> : null}
-            {view === "overview" ? (
-              <div className="studioOverview">
-                <section className="studioOverviewLead">
-                  <div><h2>Le catalogue est prêt à être travaillé</h2><p>{stats.media} média{stats.media > 1 ? "s" : ""} dans V8. Ouvrez une fiche pour contrôler les métadonnées disponibles avant le futur import V7.</p></div>
-                  <button className="secondaryButton" type="button" onClick={() => selectView("videos")}>Voir les vidéos<ChevronRight size={18} /></button>
-                </section>
-                <div className="studioOverviewGrid">
-                  <button type="button" onClick={() => selectView("schedule")}><CalendarClock size={24} /><span><strong>Programmation</strong><small>Calendrier en attente du backend</small></span><ChevronRight size={18} /></button>
-                  <button type="button" onClick={() => selectView("live")}><Radio size={24} /><span><strong>Direct OBS</strong><small>Un seul flux simultané</small></span><ChevronRight size={18} /></button>
-                  <button type="button" onClick={() => selectView("import")}><ScanLine size={24} /><span><strong>Import Nino V7</strong><small>Prévisualisation avant import</small></span><ChevronRight size={18} /></button>
-                </div>
-                <MediaWorkspace title="Contenus récemment chargés" description="Catalogue réel fourni par l’API V8." items={media.slice(0, 8)} createLabel="Ajouter une vidéo" />
-              </div>
-            ) : null}
-            {view === "series" ? <MediaWorkspace title="Gestion des séries" description="Séries et programmes organisés en saisons et épisodes." items={series} createLabel="Créer une série" /> : null}
-            {view === "flashy" ? <MediaWorkspace title="Gestion des Flashy" description="Formats courts verticaux destinés au flux Flashy." items={flashy} createLabel="Ajouter un Flashy" /> : null}
-            {view === "videos" ? <MediaWorkspace title="Gestion des vidéos" description="Tous les contenus actuellement exposés par le catalogue V8." items={media} createLabel="Ajouter une vidéo" /> : null}
-            {view === "schedule" ? <ScheduleWorkspace /> : null}
-            {view === "live" ? <LiveWorkspace liveItems={live} /> : null}
-            {view === "import" ? <V7ImportWorkspace /> : null}
-            {view === "administration" ? <AdministrationWorkspace stats={stats} /> : null}
-          </div>
-        ) : null}
+          {!loading && !error && !accessDenied && stats ? (
+            <main className="studioControlContent">
+              {creating ? <section className="studioCreateStage"><MediaEditor kind={creating} onCancel={() => setCreating(null)} onSaved={saveMedia} /></section> : null}
+              {!creating && ["overview", "videos", "flashy"].includes(view) ? <StudioWorkspace media={media} now={now} view={view} onCreate={setCreating} /> : null}
+              {!creating && view === "series" ? <SeriesWorkspace series={media.filter((item) => item.kind === "series")} onOpen={(id) => router.push(`/studio/media/${encodeURIComponent(id)}`)} onCreate={() => setCreating("series")} /> : null}
+              {!creating && view === "schedule" ? <ScheduleWorkspace media={media} now={now} /> : null}
+              {!creating && view === "live" ? <LiveWorkspace liveItems={live} /> : null}
+              {!creating && view === "administration" ? <AdministrationWorkspace stats={stats} indexing={indexingStorage} indexReport={storageIndexReport} indexError={storageIndexError} onIndexStorage={() => void indexStorage()} /> : null}
+            </main>
+          ) : null}
+        </div>
       </section>
     </AppShell>
   );
