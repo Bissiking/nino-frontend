@@ -14,8 +14,9 @@ function remainingLabel(item: MediaItem): string | null {
 export function MediaCard({ item, priority = false, portrait = false, resume = false }: { item: MediaItem; priority?: boolean; portrait?: boolean; resume?: boolean }) {
   const posterUrl = api.assetUrl(item.poster_url);
   const remaining = resume ? remainingLabel(item) : null;
+  const href = item.kind === "short" ? "/flashy" : `/watch/${item.id}`;
   return (
-    <Link className={`mediaCard focusTile ${portrait ? "portraitCard" : ""}`} href={`/watch/${item.id}`}>
+    <Link className={`mediaCard focusTile ${portrait ? "portraitCard" : ""}`} href={href}>
       <div className="posterFrame">
         {posterUrl ? <img src={posterUrl} alt="" loading={priority ? "eager" : "lazy"} className="posterImage" /> : <div className="posterFallback">{item.title.slice(0, 1)}</div>}
         <span className="playChip"><Play size={16} fill="currentColor" aria-hidden="true" /></span>
