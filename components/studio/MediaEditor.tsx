@@ -55,8 +55,8 @@ const MD_ACTIONS: MdAction[] = [
 ];
 
 const VISUAL_FIELDS: { field: VisualField; urlKey: VisualUrlKey; apiKey: "poster_url" | "backdrop_url" | "thumbnail_url" | "thumbnail_vertical_url"; label: string; hint: string }[] = [
-  { field: "thumbnail", urlKey: "thumbnailUrl", apiKey: "thumbnail_url", label: "Miniature horizontale", hint: "16:9, utilisée dans les listes" },
-  { field: "thumbnail_vertical", urlKey: "thumbnailVerticalUrl", apiKey: "thumbnail_vertical_url", label: "Miniature verticale", hint: "9:16, utilisée pour le format vertical" },
+  { field: "thumbnail", urlKey: "thumbnailUrl", apiKey: "thumbnail_url", label: "Miniature horizontale", hint: "16:9, aperçu « à suivre » dans le lecteur" },
+  { field: "thumbnail_vertical", urlKey: "thumbnailVerticalUrl", apiKey: "thumbnail_vertical_url", label: "Miniature verticale", hint: "9:16, affiche du flux Flashy" },
   { field: "poster", urlKey: "posterUrl", apiKey: "poster_url", label: "Affiche", hint: "2:3, artwork principal des cartes et de la fiche" },
   { field: "backdrop", urlKey: "backdropUrl", apiKey: "backdrop_url", label: "Arrière-plan", hint: "16:9, bandeau de la fiche et de la lecture" }
 ];
@@ -167,6 +167,8 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
   const isEditing = Boolean(media);
   const isPage = variant === "page";
   const isSeries = form.kind === "series";
+  const isShort = form.kind === "short";
+  const sourceStepShown = !isEditing && !isSeries;
   const anyFlag = Boolean(form.flags && Object.values(form.flags).some(Boolean));
 
   useEffect(() => {
@@ -741,12 +743,12 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
 
   const contentSection = (
     <section className="mediaFieldsSection" aria-labelledby="media-details-title">
-      <div className="mediaEditorSectionTitle"><h3 id="media-details-title">{isEditing ? "Contenu" : "2) Métadonnées"}</h3><p>Les informations que les spectateurs verront dans le catalogue.</p></div>
+      <div className="mediaEditorSectionTitle"><h3 id="media-details-title">{isEditing ? "Contenu" : sourceStepShown ? "2) Métadonnées" : "1) Métadonnées"}</h3><p>Les informations que les spectateurs verront dans le catalogue.</p></div>
       <div className="mediaFieldGrid">
         <label><span>Format</span><select value={form.kind} onChange={(event) => update("kind", event.target.value as MediaKind)}><option value="movie">Vidéo</option><option value="short">Flashy</option><option value="series">Série</option></select></label>
         <label className="isWide"><span>Titre</span><input required maxLength={255} value={form.title} onChange={(event) => update("title", event.target.value)} /></label>
-        <label className="isWide"><span>Synopsis <small>résumé court affiché dans les cartes</small></span><textarea rows={3} maxLength={10000} value={form.synopsis} onChange={(event) => update("synopsis", event.target.value)} /></label>
-        <div className="isWide mediaMdField">
+        {!isShort ? <label className="isWide"><span>Synopsis <small>résumé court affiché dans les cartes</small></span><textarea rows={3} maxLength={10000} value={form.synopsis} onChange={(event) => update("synopsis", event.target.value)} /></label> : null}
+        {!isShort ? <div className="isWide mediaMdField">
           <span>Description <small>Markdown : **gras**, *italique*, [liens](https://…)</small></span>
           <div className="mediaMdTabs" role="tablist" aria-label="Mode de saisie de la description">
             <button type="button" role="tab" aria-selected={descMode === "edit"} className={descMode === "edit" ? "isActive" : undefined} onClick={() => setDescMode("edit")}>Éditeur</button>
@@ -771,7 +773,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
               </div>
             )}
           </div>
-        </div>
+        </div> : null}
         <div className="isWide mediaCategoryField">
           <span>Catégorie <small>le thème principal du contenu, visible dans le catalogue</small></span>
           <div className="mediaCategoryPicker" role="radiogroup" aria-label="Catégorie">
@@ -781,7 +783,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
             ))}
           </div>
         </div>
-        <label className="isWide">
+        {!isShort ? <label className="isWide">
           <span>Tags <small>Entrée, Espace ou virgule pour valider · clic pour retirer</small></span>
           <span className="mediaTagsPicker" onClick={(event) => { if (event.target === event.currentTarget) tagInputRef.current?.focus(); }}>
             {form.tags.map((tag) => (
@@ -803,9 +805,8 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
             />
 <span className={`mediaTagPasteNote${tagPasteFeedback !== null ? " hasPasted" : ""}`} role="status" aria-live="polite">{tagPasteFeedback !== null ? `${tagPasteFeedback} tag${tagPasteFeedback > 1 ? "s" : ""} ajouté${tagPasteFeedback > 1 ? "s" : ""} · coller une liste pour tout ajouter` : "Coller une liste (une ligne, une virgule ou un espace = un tag)"}</span>
           </span>
-        </label>
-        <label><span>Année</span><input type="number" min="1900" max="2200" value={form.year} onChange={(event) => update("year", event.target.value)} /></label>
-        <label><span>Durée en secondes</span><input type="number" min="0" value={form.duration} onChange={(event) => update("duration", event.target.value)} /></label>
+        </label> : null}
+        {isSeries ? <label><span>Année</span><input type="number" min="1900" max="2200" value={form.year} onChange={(event) => update("year", event.target.value)} /></label> : null}
         <div className="isWide">
           <span>Genres <small>Entrée ou virgule pour valider · clic pour retirer</small></span>
           <span className="mediaTagsPicker" onClick={(event) => { if (event.target === event.currentTarget) genreInputRef.current?.focus(); }}>
@@ -844,11 +845,18 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     </section>
   );
 
+  const visualFields = VISUAL_FIELDS.filter(({ field }) => {
+    if (field === "thumbnail_vertical") return form.kind === "short";
+    if (field === "thumbnail") return form.kind === "movie";
+    if (form.kind === "short") return false;
+    return true;
+  });
+
   const visualSection = (
     <section className="mediaFieldsSection" aria-labelledby="media-visuals-title">
-      <div className="mediaEditorSectionTitle"><h3 id="media-visuals-title">{isEditing ? "Visuels" : "4) Visuels"}</h3><p>Affiche, arrière-plan et miniatures pour les cartes et pages de lecture.</p></div>
+      <div className="mediaEditorSectionTitle"><h3 id="media-visuals-title">{isEditing ? "Visuels" : sourceStepShown ? "4) Visuels" : "3) Visuels"}</h3><p>Affiche, arrière-plan et miniatures pour les cartes et pages de lecture.</p></div>
       <div className="mediaFieldGrid">
-        {VISUAL_FIELDS.map(({ field, urlKey, label, hint }) => {
+        {visualFields.map(({ field, urlKey, label, hint }) => {
           const value = form[urlKey];
           const pending = pendingImages[field];
           const preview = pending ? URL.createObjectURL(pending) : api.assetUrl(value) || null;
@@ -957,25 +965,25 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
 
   const publishSection = (
     <section className="mediaPublishSection" aria-labelledby="media-publish-title">
-      <div className="mediaEditorSectionTitle"><h3 id="media-publish-title">{isEditing ? "Publication" : "3) Publication"}</h3><p>Un brouillon reste visible uniquement dans Nino Studio. « Unlisted » est caché du catalogue mais lisible par lien direct.</p></div>
+      <div className="mediaEditorSectionTitle"><h3 id="media-publish-title">{isEditing ? "Publication" : sourceStepShown ? "3) Publication" : "2) Publication"}</h3><p>Un brouillon reste visible uniquement dans Nino Studio. « Unlisted » est caché du catalogue mais lisible par lien direct.</p></div>
       <div className="mediaFieldGrid">
         <label><span>Visibilité</span><select value={form.visibility} onChange={(event) => update("visibility", event.target.value)}><option value="draft">Brouillon</option><option value="private">Privé</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></label>
-        <label><span>Publication programmée</span><input type="datetime-local" value={form.publishAt} onChange={(event) => update("publishAt", event.target.value)} /></label>
-        {isEditing ? (
+        {!isShort ? <label><span>Publication programmée</span><input type="datetime-local" value={form.publishAt} onChange={(event) => update("publishAt", event.target.value)} /></label> : null}
+        {isEditing && !isShort ? (
           <div className="isWide mediaPublishTools">
             <button type="button" className="studioSecondaryTool" onClick={restorePublishInfo} title="Réapplique la date et la visibilité enregistrées sur ce média."><RefreshCw size={16} aria-hidden="true" />Restaurer la date de publication</button>
             <small className="mediaPublishInfo">Valeur enregistrée : {media?.publish_at ? new Date(media.publish_at).toLocaleString("fr-FR") : "aucune"} · visibilité « {media ? VISIBILITY_LABELS[media.visibility] ?? media.visibility : ""} »</small>
           </div>
         ) : null}
-        <label className="mediaCheckbox isWide" title="Notifie le webhook Discord configuré (NINO_DISCORD_WEBHOOK_URL) à la sortie du contenu.">
-          <input type="checkbox" checked={form.notifyDiscord} onChange={(event) => update("notifyDiscord", event.target.checked)} />
-          <span><BellRing size={16} aria-hidden="true" /><strong>Notifier Discord à la sortie</strong></span>
-        </label>
-        <label className="mediaCheckbox isWide" title="Masque les épisodes non sortis de cette série sur la page série (anti-spoiler).">
+        {isSeries || form.seriesId ? <label className="mediaCheckbox isWide" title="Masque les épisodes non sortis de cette série sur la page série (anti-spoiler).">
           <input type="checkbox" checked={form.noSpoil} onChange={(event) => update("noSpoil", event.target.checked)} />
           <span><strong>Mode No Spoil</strong><small>Masque les vidéos non sorties de la série.</small></span>
-        </label>
-        <label className="mediaCheckbox isWide"><input type="checkbox" checked={form.isAvailable} onChange={(event) => update("isAvailable", event.target.checked)} /><span>Autoriser la lecture dès que le contenu est publié</span></label>
+        </label> : null}
+        {!isSeries ? <label className="mediaCheckbox isWide" title="Notifie le webhook Discord configuré (NINO_DISCORD_WEBHOOK_URL) à la sortie du contenu.">
+          <input type="checkbox" checked={form.notifyDiscord} onChange={(event) => update("notifyDiscord", event.target.checked)} />
+          <span><BellRing size={16} aria-hidden="true" /><strong>Notifier Discord à la sortie</strong></span>
+        </label> : null}
+        {!isSeries ? <label className="mediaCheckbox isWide"><input type="checkbox" checked={form.isAvailable} onChange={(event) => update("isAvailable", event.target.checked)} /><span>Autoriser la lecture dès que le contenu est publié</span></label> : null}
       </div>
     </section>
   );
@@ -1042,10 +1050,10 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
           <div className="mediaEditMain">
             {contentSection}
             {publishSection}
-            {seriesSection}
+            {form.kind === "movie" ? seriesSection : null}
             {visualSection}
             {thumbnailBlock}
-            {warningSection}
+            {!isSeries ? warningSection : null}
             {feedback}
           </div>
 
@@ -1093,8 +1101,8 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       <div className="v7UploadGrid">
         {sourceSection}
         {contentSection}
-        {seriesSection}
-        <div className="v7UploadSettings">{publishSection}{visualSection}{thumbnailBlock}{warningSection}</div>
+        {form.kind === "movie" ? seriesSection : null}
+        <div className="v7UploadSettings">{publishSection}{visualSection}{thumbnailBlock}{!isSeries ? warningSection : null}</div>
         {!isSeries && files.length ? <section className="v7UploadPreview" aria-labelledby="upload-preview-title"><div className="mediaEditorSectionTitle"><h3 id="upload-preview-title">Aperçu rapide</h3><p>Le détail technique sera enrichi après le traitement.</p></div><dl><div><dt>Fichier</dt><dd>{sourceMode === "hls" ? `${files.length} éléments HLS` : files[0]?.name}</dd></div><div><dt>Taille</dt><dd>{formatBytes(packageInfo.bytes)}</dd></div><div><dt>Source</dt><dd>{sourceMode === "hls" ? "HLS multi-qualités" : files[0]?.type || "Vidéo"}</dd></div><div><dt>Statut</dt><dd>Prêt à envoyer</dd></div></dl></section> : null}
       </div>
       {feedback}
