@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Compass, Home, PanelsTopLeft, Search, Zap } from "lucide-react";
 import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
+import pkg from "@/package.json";
 
 const primaryNav = [
   { href: "/", label: "Accueil", icon: Home },
@@ -49,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className={`mainSurface ${pathname === "/" ? "homeSurface" : ""}`}>{children}</main>
 
       <footer className="ninoFooter" aria-label="Pied de page Nino">
-        <div className="ninoFooterBrand"><Image src="/logo_nino_small.png" alt="" width={34} height={34} /><span><strong>Nino</strong><small>Version 8 · interface V7</small></span></div>
+        <div className="ninoFooterBrand"><Image src="/logo_nino_small.png" alt="" width={34} height={34} /><span><strong>Nino</strong><small>Version {pkg.version}</small></span></div>
         <nav aria-label="Liens rapides"><Link href="/">Accueil</Link><Link href="/search">Recherche</Link><Link href="/#latest">Vidéos</Link><Link href="/#series">Séries</Link><Link href="/#live">Live</Link><Link href="/flashy">Flashy</Link></nav>
         <small>Frontend indépendant Nino</small>
       </footer>
