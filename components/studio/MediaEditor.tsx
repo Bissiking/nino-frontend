@@ -129,6 +129,19 @@ function initialForm(kind: MediaKind, media?: MediaItem | null) {
   };
 }
 
+function UploadProgressIndicator({ uploadProgress }: { uploadProgress: { loaded: number; total: number } | null }) {
+  const sending = uploadProgress !== null && uploadProgress.loaded < uploadProgress.total;
+  const percent = uploadProgress && uploadProgress.total > 0
+    ? Math.min(100, Math.round((uploadProgress.loaded / uploadProgress.total) * 100))
+    : 0;
+  return (
+    <div className={sending ? "v7UploadProgress" : "v7UploadProgress isProcessing"} role="status">
+      <span aria-hidden="true"><i style={{ width: `${sending ? percent : 42}%` }} /></span>
+      <strong>{sending ? `Envoi vers Nino… ${percent}%` : "Traitement en cours…"}</strong>
+    </div>
+  );
+}
+
 export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant = "panel", decision = null, previewError = null, refreshing = false, onRefresh }: Props) {
   const [form, setForm] = useState(() => initialForm(kind, media));
   const [seriesOptions, setSeriesOptions] = useState<MediaItem[]>([]);
@@ -136,6 +149,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ loaded: number; total: number } | null>(null);
   const [descMode, setDescMode] = useState<"edit" | "preview">("edit");
   const [isMac] = useState(() => typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || ""));
   const [uploading, setUploading] = useState<VisualField | null>(null);
@@ -157,6 +171,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
   const [autoFillNote, setAutoFillNote] = useState<string | null>(null);
   const [tagPasteFeedback, setTagPasteFeedback] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const genreInputRef = useRef<HTMLInputElement>(null);
   const mdTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -208,6 +223,12 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     if (sourceMode === "hls") input.setAttribute("webkitdirectory", "");
     else input.removeAttribute("webkitdirectory");
   }, [sourceMode]);
+
+  useEffect(() => {
+    if (!error) return;
+    feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    feedbackRef.current?.focus({ preventScroll: true });
+  }, [error]);
 
   const packageInfo = useMemo(() => {
     const playlists = files.filter((file) => file.name.toLowerCase().endsWith(".m3u8")).length;
@@ -696,10 +717,11 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     }
 
     setBusy(true);
+    setUploadProgress(null);
     try {
       const saved = isEditing && media
         ? await api.updateAdminMedia(media.id, payload())
-        : await api.createAdminMedia({ ...payload(), source_mode: sourceMode }, files);
+        : await api.createAdminMedia({ ...payload(), source_mode: sourceMode }, files, setUploadProgress);
       const queued = Object.keys(pendingImages) as VisualField[];
       if (queued.length) {
         for (const field of queued) {
@@ -990,7 +1012,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
 
   const feedback = (
     <>
-      {error ? <div className="mediaEditorMessage isError" role="alert"><AlertCircle size={18} />{error}</div> : null}
+      {error ? <div ref={feedbackRef} className="mediaEditorMessage isError" role="alert" tabIndex={-1}><AlertCircle size={18} />{error}</div> : null}
       {success ? <div className="mediaEditorMessage isSuccess" role="status"><CheckCircle2 size={18} />{success}</div> : null}
     </>
   );
@@ -1096,7 +1118,10 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     <form ref={editorFormRef} className="mediaEditor v7Upload" onSubmit={submit}>
       <header className="mediaEditorHeader v7UploadHeader">
         <div><span>Nino Studio</span><h2>{isSeries ? "Nouvelle série" : kind === "short" ? "Upload Flashy" : "Upload vidéo"}</h2><p>{isSeries ? "Créez un conteneur de série, puis rattachez-y des épisodes." : "Déposez votre fichier, vérifiez les informations puis envoyez-le. Le traitement démarre ensuite côté backend."}</p></div>
-        <button className="studioIconButton" type="button" onClick={onCancel} aria-label="Fermer l’éditeur"><X size={19} /></button>
+        <div className="v7UploadHeaderActions">
+          <button className="studioIconButton" type="button" onClick={onCancel} aria-label="Fermer l’éditeur"><X size={19} /></button>
+          <button className="primaryButton" type="submit" disabled={busy}>{busy ? <Loader2 className="spin" size={18} /> : isSeries ? <Tags size={18} /> : <Upload size={18} />}{busy ? "Enregistrement…" : isSeries ? "Créer la série" : "Importer le média"}</button>
+        </div>
       </header>
       <div className="v7UploadGrid">
         {sourceSection}
@@ -1106,7 +1131,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
         {!isSeries && files.length ? <section className="v7UploadPreview" aria-labelledby="upload-preview-title"><div className="mediaEditorSectionTitle"><h3 id="upload-preview-title">Aperçu rapide</h3><p>Le détail technique sera enrichi après le traitement.</p></div><dl><div><dt>Fichier</dt><dd>{sourceMode === "hls" ? `${files.length} éléments HLS` : files[0]?.name}</dd></div><div><dt>Taille</dt><dd>{formatBytes(packageInfo.bytes)}</dd></div><div><dt>Source</dt><dd>{sourceMode === "hls" ? "HLS multi-qualités" : files[0]?.type || "Vidéo"}</dd></div><div><dt>Statut</dt><dd>Prêt à envoyer</dd></div></dl></section> : null}
       </div>
       {feedback}
-      {busy ? <div className="v7UploadProgress" role="status"><span aria-hidden="true"><i /></span><strong>Envoi vers Nino en cours…</strong></div> : null}
+      {busy ? <UploadProgressIndicator uploadProgress={uploadProgress} /> : null}
       <footer className="mediaEditorFooter"><button className="secondaryButton" type="button" onClick={onCancel} disabled={busy}>Annuler</button><button className="primaryButton" type="submit" disabled={busy} title={`Enregistrer (${isMac ? "⌘" : "Ctrl"} + S)`}>{busy ? <Loader2 className="spin" size={18} /> : isSeries ? <Tags size={18} /> : <Upload size={18} />}{busy ? "Enregistrement…" : isSeries ? "Créer la série" : "Importer le média"}</button></footer>
     </form>
   );

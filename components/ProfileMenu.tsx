@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Home, LogOut, PanelsTopLeft, Search, Settings, UserRound, UsersRound, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { clearSession, getProfileId, getRefreshToken } from "@/lib/session";
+import pkg from "@/package.json";
 import type { Profile, User } from "@/types/nino";
 
 const focusableSelector = "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])";
@@ -128,7 +129,7 @@ export function ProfileMenu() {
               </section>
             </div>
 
-            <footer><UserRound size={14} aria-hidden="true" /><span>Nino V8 · interface V7</span></footer>
+            <footer><UserRound size={14} aria-hidden="true" /><span>Nino v{pkg.version}</span></footer>
           </div>
         </div>
       ) : null}
