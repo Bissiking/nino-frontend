@@ -48,16 +48,115 @@ async function request<T>(path: string, init: RequestInit = {}, requiresAuth = t
     );
   }
 
-  const body = (await response.json()) as ApiResponse<T>;
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  const responseText = await response.text();
+  let body: ApiResponse<T> | null = null;
+
+  if (responseText) {
+    try {
+      body = JSON.parse(responseText) as ApiResponse<T>;
+    } catch {
+      body = null;
+    }
+  }
 
   if (requiresAuth && response.status === 401) {
     redirectToLogin();
+  }
+
+  if (!body) {
+    const status = response.status || 0;
+    const statusLabel = status ? ` (HTTP ${status})` : "";
+    const message = status === 413
+      ? "Le fichier dépasse la taille autorisée par le serveur ou son proxy."
+      : status === 400 && isFormData
+        ? "Le serveur a refusé les données de l’upload. Vérifiez la taille du fichier et la configuration du proxy."
+        : status >= 500
+          ? "Le serveur a rencontré une erreur pendant la requête."
+          : "Le serveur a renvoyé une réponse illisible.";
+    throw new NinoApiError(
+      "INVALID_SERVER_RESPONSE",
+      `${message}${statusLabel}`,
+      { contentType, responsePreview: responseText.slice(0, 300) },
+      status
+    );
   }
 
   if (!body.success) {
     throw new NinoApiError(body.error.code, body.error.message, body.error.details, response.status);
   }
   return body.data;
+}
+
+async function uploadWithProgress<T>(
+  path: string,
+  body: FormData,
+  onProgress?: (progress: { loaded: number; total: number }) => void
+): Promise<T> {
+  const token = getAccessToken();
+  if (!token) {
+    redirectToLogin();
+    throw new NinoApiError("AUTH_REQUIRED", "Connexion requise.", {}, 401);
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}${path}`);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    if (onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onProgress({ loaded: event.loaded, total: event.total });
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      let body: ApiResponse<T> | null = null;
+      if (xhr.responseText) {
+        try {
+          body = JSON.parse(xhr.responseText) as ApiResponse<T>;
+        } catch {
+          body = null;
+        }
+      }
+
+      if (xhr.status === 401) {
+        redirectToLogin();
+      }
+
+      if (!body) {
+        const status = xhr.status || 0;
+        const statusLabel = status ? ` (HTTP ${status})` : "";
+        const message = status === 413
+          ? "Le fichier dépasse la taille autorisée par le serveur ou son proxy."
+          : status === 400
+            ? "Le serveur a refusé les données de l’upload. Vérifiez la taille du fichier et la configuration du proxy."
+            : status >= 500
+              ? "Le serveur a rencontré une erreur pendant la requête."
+              : "Le serveur a renvoyé une réponse illisible.";
+        reject(new NinoApiError("INVALID_SERVER_RESPONSE", `${message}${statusLabel}`, {
+          contentType: xhr.getResponseHeader("content-type") ?? "",
+          responsePreview: xhr.responseText.slice(0, 300)
+        }, status));
+        return;
+      }
+
+      if (!body.success) {
+        reject(new NinoApiError(body.error.code, body.error.message, body.error.details, xhr.status));
+        return;
+      }
+      resolve(body.data);
+    };
+
+    xhr.onerror = () => {
+      reject(new NinoApiError("NETWORK_ERROR", "Impossible de contacter le serveur. Vérifiez votre connexion.", { cause: "network" }, 0));
+    };
+
+    xhr.send(body);
+  });
 }
 
 export const api = {
@@ -155,7 +254,11 @@ export const api = {
     ),
   adminPublishSweep: () =>
     request<PublishSweepResult>("/api/v1/admin/media/publish-sweep", { method: "POST" }),
-  createAdminMedia: (payload: MediaWritePayload & { source_mode: "file" | "hls" }, files: File[]) => {
+  createAdminMedia: (
+    payload: MediaWritePayload & { source_mode: "file" | "hls" },
+    files: File[],
+    onProgress?: (progress: { loaded: number; total: number }) => void
+  ) => {
     const form = new FormData();
     form.append("payload", JSON.stringify(payload));
     files.forEach((file) => {
@@ -163,7 +266,7 @@ export const api = {
       form.append("files", file, file.name);
       form.append("asset_paths", relativePath);
     });
-    return request<MediaItem>("/api/v1/admin/media", { method: "POST", body: form });
+    return uploadWithProgress<MediaItem>("/api/v1/admin/media", form, onProgress);
   },
   updateAdminMedia: (mediaId: string, payload: Partial<MediaWritePayload>) =>
     request<MediaItem>(`/api/v1/admin/media/${encodeURIComponent(mediaId)}`, {
