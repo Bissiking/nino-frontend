@@ -447,6 +447,25 @@ Erreurs :
 - `404 MEDIA_NOT_FOUND` ;
 - `403 ACCESS_DENIED` si le profil appartient à un autre utilisateur.
 
+### `POST /api/v1/media/{media_id}/thumbnail`
+
+Génère automatiquement une miniature verticale (`thumbnail_vertical_url`) à partir de la source vidéo quand le média n'en possède pas encore, puis renvoie le `MediaItem` mis à jour. Utilisé par le flux Flashy pour les contenus courts sans affiche.
+
+Règles :
+
+- authentification requise ;
+- idempotent : si `thumbnail_vertical_url` existe déjà, aucune génération n'est déclenchée ;
+- nécessite une source lisible (`source_kind` `file` ou `hls`) présente sur le disque ;
+- l'image est extraite au début du contenu (environ 15 %, borné) et enregistrée dans le dossier `media_image_dir` ; le média n'est pas modifié ailleurs.
+
+Réponse `200` : enveloppe contenant un `MediaItem` dont `thumbnail_vertical_url` est renseigné.
+
+Erreurs :
+
+- `404 MEDIA_NOT_FOUND` ;
+- `409 MEDIA_SOURCE_MISSING` si la source est absente ou introuvable ;
+- `502 THUMBNAIL_GENERATION_FAILED` si ffmpeg échoue.
+
 ### `GET /api/v1/search?q={query}`
 
 Recherche authentifiée dans le titre, le synopsis et les genres.

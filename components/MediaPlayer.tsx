@@ -22,6 +22,7 @@ type Props = {
   autoPlay?: boolean;
   muted?: boolean;
   loop?: boolean;
+  tapToToggle?: boolean;
   className?: string;
   mediaId?: string;
   profileId?: string | null;
@@ -29,6 +30,7 @@ type Props = {
   upNext?: PlayerUpNext | null;
   onUpNext?: () => void;
   onProgress?: (positionSeconds: number, durationSeconds: number) => void;
+  onMutedChange?: (muted: boolean) => void;
 };
 
 const KEYBOARD_STEPS = 10;
@@ -46,8 +48,8 @@ function formatTime(seconds: number): string {
 }
 
 export function MediaPlayer({
-  decision, poster, controls = true, autoPlay = false, muted = false, loop = false, className,
-  mediaId, profileId, resumePercent = 0, upNext = null, onUpNext, onProgress
+  decision, poster, controls = true, autoPlay = false, muted = false, loop = false, tapToToggle = false, className,
+  mediaId, profileId, resumePercent = 0, upNext = null, onUpNext, onProgress, onMutedChange = () => {}
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -304,6 +306,25 @@ export function MediaPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    if (video.muted !== muted) video.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    if (!ready || !autoPlay) return;
+    const video = videoRef.current;
+    if (!video) return;
+    void video.play().catch(() => {
+      if (video.muted) return;
+      video.muted = true;
+      setMutedState(true);
+      onMutedChange(true);
+      void video.play().catch(() => {});
+    });
+  }, [ready, autoPlay, onMutedChange]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
     const onPlay = () => { setPlaying(true); setBuffering(false); pokeControls(); };
     const onPause = () => { setPlaying(false); setShowControls(true); };
     const onWaiting = () => setBuffering(true);
@@ -403,7 +424,7 @@ export function MediaPlayer({
         loop={loop}
         playsInline
         poster={poster ? api.assetUrl(poster) ?? undefined : undefined}
-        onClick={controls ? togglePlay : undefined}
+        onClick={controls || tapToToggle ? togglePlay : undefined}
         onDoubleClick={() => { if (controls) void toggleFullscreen(); }}
       />
 
@@ -455,7 +476,7 @@ export function MediaPlayer({
         </div>
       ) : null}
 
-      {controls && ready && !error && !offline && !playing && !ended ? (
+      {(controls || tapToToggle) && ready && !error && !offline && !playing && !ended ? (
         <div className="playerBigPlay" role="presentation">
           <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Lecture"}><Play size={26} fill="currentColor" aria-hidden="true" /></button>
         </div>

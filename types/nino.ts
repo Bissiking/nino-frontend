@@ -249,3 +249,57 @@ export type CommentCreateResult = {
   comment: CommentItem;
   comment_count: number;
 };
+
+export type TranscodeJob = {
+  id: string;
+  media_id: string;
+  status: "pending" | "running" | "failed" | "done";
+  attempts: number;
+  priority: number;
+  worker: string | null;
+  error: string | null;
+  progress: number | null;
+  stage: string | null;
+  stale: boolean;
+  created_at: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  last_heartbeat: string | null;
+};
+
+export type TranscodeWorkerControl = {
+  mode: "systemd" | "process";
+  systemd_service: string | null;
+  systemd_active: boolean | null;
+  managed_pid: number | null;
+  managed_alive: boolean;
+};
+
+export type TranscodeSnapshot = {
+  worker_enabled: boolean;
+  worker: {
+    name: string;
+    heartbeat_at: string;
+    age_seconds: number;
+    alive: boolean;
+  } | null;
+  window: { start: string; end: string };
+  poll_seconds: number;
+  max_concurrency: number;
+  max_attempts: number;
+  stale_threshold_seconds: number;
+  counts: { pending: number; running: number; failed: number; done: number };
+  running: {
+    id: string;
+    media_id: string;
+    worker: string | null;
+    progress: number | null;
+    stage: string | null;
+    started_at: string | null;
+    last_heartbeat: string | null;
+    heartbeat_age_seconds: number | null;
+    stale: boolean | null;
+  } | null;
+  worker_alive: boolean;
+  jobs: TranscodeJob[];
+};

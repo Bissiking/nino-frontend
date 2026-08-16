@@ -394,6 +394,10 @@ function AdministrationWorkspace({ stats, indexing, indexReport, indexError, onI
         {indexReport ? <p className={indexReport.errors.length ? "studioStorageIndexResult hasWarnings" : "studioStorageIndexResult"} role="status">{indexReport.discovered} dossier{indexReport.discovered > 1 ? "s" : ""} détecté{indexReport.discovered > 1 ? "s" : ""} · {indexReport.created} créé{indexReport.created > 1 ? "s" : ""} · {indexReport.updated} actualisé{indexReport.updated > 1 ? "s" : ""}{indexReport.errors.length ? ` · ${indexReport.errors.length} erreur${indexReport.errors.length > 1 ? "s" : ""}` : ""}</p> : null}
         {indexError ? <p className="studioStorageIndexResult isError" role="alert">{indexError}</p> : null}
       </section>
+      <section className="studioStorageIndexer" aria-labelledby="studio-transcode-title">
+        <div className="studioStorageIndexerCopy"><Activity size={22} aria-hidden="true" /><div><h2 id="studio-transcode-title">Worker et file de transcodage</h2><p>Démarrer ou arrêter le worker, suivre son statut et les jobs en temps réel.</p></div></div>
+        <Link className="secondaryButton" href="/studio/transcode"><Activity size={18} aria-hidden="true" /> Ouvrir le transcodage</Link>
+      </section>
     </>
   );
 }
