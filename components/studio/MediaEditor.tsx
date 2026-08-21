@@ -111,6 +111,8 @@ function initialForm(kind: MediaKind, media?: MediaItem | null) {
     tags: media?.tags ?? [],
     year: media?.year?.toString() ?? "",
     duration: media?.duration_seconds?.toString() ?? "0",
+    introStart: media?.intro_start_seconds?.toString() ?? "0",
+    introEnd: media?.intro_end_seconds?.toString() ?? "0",
     genres: media?.genres.join(", ") ?? (kind === "short" ? "Flashy" : ""),
     posterUrl: media?.poster_url ?? "",
     backdropUrl: media?.backdrop_url ?? "",
@@ -681,6 +683,8 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       tags: form.tags.map((tag) => tag.trim()).filter(Boolean),
       year: form.year ? Number(form.year) : null,
       duration_seconds: Number(form.duration || 0),
+      intro_start_seconds: Number(form.introStart || 0),
+      intro_end_seconds: Number(form.introEnd || 0),
       genres: form.genres.split(",").map((genre) => genre.trim()).filter(Boolean),
       poster_url: form.posterUrl.trim() || null,
       backdrop_url: form.backdropUrl.trim() || null,
@@ -690,7 +694,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       publish_at: form.publishAt ? new Date(form.publishAt).toISOString() : null,
       is_available: form.isAvailable,
       notify_discord: form.notifyDiscord,
-      no_spoil: form.noSpoil,
+      no_spoil: isSeries ? form.noSpoil : false,
       is_adult: form.isAdult || flags.length > 0,
       content_flags: flags,
       series_source_id: form.seriesId.trim() || null,
@@ -705,6 +709,10 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     setSuccess(null);
     if (!form.title.trim()) {
       setError("Donnez un titre au contenu avant de l’enregistrer.");
+      return;
+    }
+    if (!isSeries && Number(form.introEnd || 0) > 0 && Number(form.introEnd) <= Number(form.introStart || 0)) {
+      setError("La fin de l’intro doit être placée après son début.");
       return;
     }
     if (!isSeries && !isEditing && !files.length) {
@@ -767,7 +775,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     <section className="mediaFieldsSection" aria-labelledby="media-details-title">
       <div className="mediaEditorSectionTitle"><h3 id="media-details-title">{isEditing ? "Contenu" : sourceStepShown ? "2) Métadonnées" : "1) Métadonnées"}</h3><p>Les informations que les spectateurs verront dans le catalogue.</p></div>
       <div className="mediaFieldGrid">
-        <label><span>Format</span><select value={form.kind} onChange={(event) => update("kind", event.target.value as MediaKind)}><option value="movie">Vidéo</option><option value="short">Flashy</option><option value="series">Série</option></select></label>
+        <label><span>Type de contenu</span><select value={form.kind} onChange={(event) => update("kind", event.target.value as MediaKind)}><option value="movie">Vidéo / épisode</option><option value="short">Flashy</option><option value="series">Série (sans vidéo)</option></select></label>
         <label className="isWide"><span>Titre</span><input required maxLength={255} value={form.title} onChange={(event) => update("title", event.target.value)} /></label>
         {!isShort ? <label className="isWide"><span>Synopsis <small>résumé court affiché dans les cartes</small></span><textarea rows={3} maxLength={10000} value={form.synopsis} onChange={(event) => update("synopsis", event.target.value)} /></label> : null}
         {!isShort ? <div className="isWide mediaMdField">
@@ -852,13 +860,17 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
             <span className="mediaTagPasteNote" role="status" aria-live="polite">{genrePasteFeedback !== null ? `${genrePasteFeedback} genre${genrePasteFeedback > 1 ? "s" : ""} ajouté${genrePasteFeedback > 1 ? "s" : ""} · coller une liste pour tout ajouter` : "Coller une liste (une virgule ou un espace = un genre)"}</span>
           </span>
         </div>
+        {!isSeries ? <>
+          <label><span>Début de l’intro <small>en secondes</small></span><input type="number" min="0" step="1" value={form.introStart} onChange={(event) => update("introStart", event.target.value)} /></label>
+          <label><span>Fin de l’intro <small>0 désactive le bouton</small></span><input type="number" min="0" step="1" value={form.introEnd} onChange={(event) => update("introEnd", event.target.value)} /></label>
+        </> : null}
       </div>
     </section>
   );
 
   const seriesSection = (
     <section className="mediaFieldsSection" aria-labelledby="media-series-title">
-      <div className="mediaEditorSectionTitle"><h3 id="media-series-title">Série, saison &amp; épisode</h3><p>Les épisodes sont numérotés automatiquement dans leur saison. Réordonnez-les depuis le Studio.</p></div>
+      <div className="mediaEditorSectionTitle"><h3 id="media-series-title">Rattachement à une série</h3><p>Laissez « Aucune série » pour une vidéo autonome. Une vidéo rattachée devient un épisode.</p></div>
       <div className="mediaFieldGrid">
         <label className="isWide"><span>Série</span><select value={form.seriesId} onChange={(event) => update("seriesId", event.target.value)}><option value="">Aucune série</option>{seriesOptions.map((option) => <option key={option.id} value={option.id}>{option.title}</option>)}</select></label>
         <label><span>Saison <small>défaut 1</small></span><input type="number" min="1" max="100" disabled={!form.seriesId} value={form.seriesId ? form.seasonNumber : ""} onChange={(event) => update("seasonNumber", event.target.value)} /></label>
@@ -997,10 +1009,11 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
             <small className="mediaPublishInfo">Valeur enregistrée : {media?.publish_at ? new Date(media.publish_at).toLocaleString("fr-FR") : "aucune"} · visibilité « {media ? VISIBILITY_LABELS[media.visibility] ?? media.visibility : ""} »</small>
           </div>
         ) : null}
-        {isSeries || form.seriesId ? <label className="mediaCheckbox isWide" title="Masque les épisodes non sortis de cette série sur la page série (anti-spoiler).">
+        {isSeries ? <label className="mediaCheckbox isWide" title="Contrôle la visibilité des épisodes programmés sur la page publique de cette série.">
           <input type="checkbox" checked={form.noSpoil} onChange={(event) => update("noSpoil", event.target.checked)} />
-          <span><strong>Mode No Spoil</strong><small>Masque les vidéos non sorties de la série.</small></span>
+          <span><strong>Masquer les prochains épisodes (No Spoil)</strong><small>Activé : ils restent invisibles jusqu’à leur date de sortie. Désactivé : ils apparaissent verrouillés avec leur date.</small></span>
         </label> : null}
+        {!isSeries && form.seriesId ? <div className="mediaNoSpoilHelp isWide"><Lock size={18} aria-hidden="true" /><span><strong>No Spoil est réglé sur la série</strong><small>Cet épisode suit automatiquement le choix effectué dans la fiche de sa série.</small></span></div> : null}
         {!isSeries ? <label className="mediaCheckbox isWide" title="Notifie le webhook Discord configuré (NINO_DISCORD_WEBHOOK_URL) à la sortie du contenu.">
           <input type="checkbox" checked={form.notifyDiscord} onChange={(event) => update("notifyDiscord", event.target.checked)} />
           <span><BellRing size={16} aria-hidden="true" /><strong>Notifier Discord à la sortie</strong></span>

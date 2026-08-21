@@ -7,7 +7,7 @@ import { MediaCard } from "./MediaCard";
 export function Rail({ rail }: { rail: HomeRail }) {
   const portrait = rail.id === "shorts";
   return (
-    <section className={`rail ${portrait ? "flashyRail" : ""}`} id={rail.id} aria-labelledby={`rail-${rail.id}`}>
+    <section className={`rail ${portrait ? "homeFlashyRail" : ""}`} id={rail.id} aria-labelledby={`rail-${rail.id}`}>
       <div className="railHeader">
         <h2 id={`rail-${rail.id}`}>{rail.title}</h2>
         {portrait && rail.items.length ? <Link href="/flashy">Tout voir <ChevronRight size={18} aria-hidden="true" /></Link> : null}

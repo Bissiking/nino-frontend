@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <footer className="ninoFooter" aria-label="Pied de page Nino">
         <div className="ninoFooterBrand"><Image src="/logo_nino_small.png" alt="" width={34} height={34} /><span><strong>Nino</strong><small>Version {pkg.version}</small></span></div>
         <nav aria-label="Liens rapides"><Link href="/">Accueil</Link><Link href="/search">Recherche</Link><Link href="/#latest">Vidéos</Link><Link href="/#series">Séries</Link><Link href="/#live">Live</Link><Link href="/flashy">Flashy</Link></nav>
-        <small>Frontend indépendant Nino</small>
+        <small>Vos programmes. Votre univers.</small>
       </footer>
 
       <nav className="bottomNav" aria-label="Navigation mobile">

@@ -189,6 +189,8 @@ Autoriser explicitement l'origine du frontend configurée en développement et e
   "genres": ["Gaming", "Aventure"],
   "poster_url": "https://cdn.example.com/posters/media-id.webp",
   "backdrop_url": "https://cdn.example.com/backdrops/media-id.webp",
+  "intro_start_seconds": 8,
+  "intro_end_seconds": 42,
   "rating": 8.8,
   "is_available": true,
   "progress_percent": 42.5
@@ -203,6 +205,7 @@ Contraintes attendues :
 - `duration_seconds >= 0` ;
 - `progress_percent` est compris entre `0` et `100` ;
 - `position_seconds` (optionnel) : position de reprise en secondes, renseignée pour les items du rail `continue` ;
+- `intro_start_seconds` et `intro_end_seconds` délimitent la fenêtre pendant laquelle le lecteur propose de passer l’intro ; la valeur `0` désactive cette option ;
 - les URLs d'images doivent être directement accessibles par Next Image ou provenir d'un domaine autorisé côté frontend.
 
 ### HomeRail
@@ -210,7 +213,7 @@ Contraintes attendues :
 ```json
 {
   "id": "top10",
-  "title": "Top 10 cette semaine",
+  "title": "Top 3 cette semaine",
   "items": []
 }
 ```
@@ -220,7 +223,7 @@ IDs utilisés par l'interface :
 | ID | Usage frontend |
 |---|---|
 | `continue` | Reprendre une lecture |
-| `top10` | Classement Top 10 |
+| `top10` | Classement dynamique de 3 à 10 contenus |
 | `latest` | Derniers ajouts ; doit exister même vide |
 | `movies` | Émissions et concepts |
 | `series` | Séries gaming |
@@ -380,7 +383,7 @@ Réponse `200` :
     },
     "rails": [
       { "id": "continue", "title": "Continuer", "items": [] },
-      { "id": "top10", "title": "Top 10 cette semaine", "items": [] },
+      { "id": "top10", "title": "Top 3 cette semaine", "items": [] },
       { "id": "latest", "title": "Derniers ajouts", "items": [] },
       { "id": "movies", "title": "Émissions et concepts", "items": [] },
       { "id": "series", "title": "Séries gaming", "items": [] },
@@ -395,7 +398,7 @@ Réponse `200` :
 Règles :
 
 - `hero` peut être `null` si le catalogue est vide ; il privilégie le média en cours de lecture le plus récent, sinon le dernier ajout ;
-- `top10.items` contient au maximum 10 médias disponibles, triés par note décroissante puis date d'ajout décroissante ;
+- `top10.items` contient entre 3 et 10 vidéos longues ou séries disponibles lorsque le catalogue le permet ; les contenus `short` (Flashy) et `live` sont exclus. Le classement utilise l’activité des 7 derniers jours (lectures, progression à 80 % ou plus, likes et favoris), puis la note et la récence comme départage. Tant que les statistiques sont insuffisantes, il est complété à 3 contenus par la note et la récence ;
 - `continue` est le rail "Reprendre" : contient les médias du profil dont `0 < progress_percent < 95`, triés par date de dernier visionnage décroissante ; chaque item expose `position_seconds` (position de reprise en secondes) ;
 - le progrès doit être celui du profil demandé ;
 - les rails connus doivent être retournés avec `items: []` lorsqu'ils sont vides ;

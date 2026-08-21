@@ -148,7 +148,7 @@ function SeriesDetail({ media, series }: { media: MediaItem; series: SeriesPage 
           <h1>{media.title}</h1>
           <p>{media.synopsis}</p>
           <Chips category={media.category} tags={media.tags} flags={media.is_adult ? media.content_flags : undefined} />
-          {media.no_spoil ? <p className="noSpoilNote">No Spoil activé : les épisodes non sortis sont masqués.</p> : null}
+          {media.no_spoil ? <p className="noSpoilNote">Les prochains épisodes apparaîtront uniquement le jour de leur sortie.</p> : null}
         </div>
       </div>
       <Markdown>{media.description}</Markdown>
@@ -262,6 +262,8 @@ export default function WatchPage() {
                   mediaId={media.id}
                   profileId={getProfileId()}
                   resumePercent={restartToken > 0 ? 0 : media.progress_percent}
+                  introStartSeconds={media.intro_start_seconds}
+                  introEndSeconds={media.intro_end_seconds}
                   upNext={isEpisode && nextEpisode ? { id: nextEpisode.id, title: nextEpisode.title || `Épisode ${nextEpisode.episode_number}` } : null}
                   onUpNext={isEpisode && nextEpisode ? () => runNextEpisode(nextEpisode) : undefined}
                 />
