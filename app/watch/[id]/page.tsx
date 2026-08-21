@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CalendarClock, ChevronDown, ChevronRight, Clock3, Flame, Lock, Play, RotateCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Markdown } from "@/components/Markdown";
@@ -208,7 +208,8 @@ function SeriesDetail({ media, series }: { media: MediaItem; series: SeriesPage 
 }
 
 function runNextEpisode(next: SeriesEpisodeEntry) {
-  window.location.href = `/watch/${encodeURIComponent(next.id)}`;
+  const router = useRouter();
+  router.push(`/watch/${encodeURIComponent(next.id)}`);
 }
 
 export default function WatchPage() {
@@ -283,6 +284,7 @@ export default function WatchPage() {
                   introEndSeconds={media.intro_end_seconds}
                   upNext={isEpisode && nextEpisode ? { id: nextEpisode.id, title: nextEpisode.title || `Épisode ${nextEpisode.episode_number}` } : null}
                   onUpNext={isEpisode && nextEpisode ? () => runNextEpisode(nextEpisode) : undefined}
+                  autoPlay={true}
                 />
               ) : null}
             </div>

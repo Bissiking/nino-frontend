@@ -635,11 +635,98 @@ body.isCinematic { overflow: hidden; }
 }
 .playerEndedLabel { align-items: center; color: var(--accent); display: inline-flex; font-size: var(--text-xs); font-weight: 800; gap: 7px; letter-spacing: 0.08em; text-transform: uppercase; }
 .playerEndedTitle { color: var(--ink); font-family: var(--font-title); font-size: var(--text-lg); line-height: 1.25; margin: 0; }
-.playerEndedCountdown { color: var(--muted); margin: -4px 0 0; }
-.playerEndedCountdown strong { color: var(--ink); font-variant-numeric: tabular-nums; }
-.playerEndedThumb { border-radius: var(--radius-sm); max-height: 150px; object-fit: cover; width: 100%; }
-.playerEndedActions { display: flex; flex-wrap: wrap; gap: 10px; }
+
 .playerEndedActions .primaryButton, .playerEndedActions .secondaryButton { min-height: 44px; padding: 0 16px; }
+
+.playerUpNext {
+  position: fixed;
+  bottom: 96px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  width: min(340px, calc(100% - 40px));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  backdrop-filter: blur(8px);
+}
+.playerUpNext .playerUpNextLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.playerUpNext .playerUpNextTimer {
+  align-self: flex-end;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.playerUpNext .playerUpNextTitle {
+  font-family: var(--font-title);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0;
+}
+.playerUpNext .playerUpNextActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+/* Progress bar indicating remaining time in the up-next window */
+.playerUpNext::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--brand-gradient);
+  width: var(--upnext-progress, 0%);
+  transition: width 250ms linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .playerUpNext::before {
+    transition: none;
+  }
+}
+
+/* Mobile: full-width up-next popup */
+@media (max-width: 520px) {
+  .playerUpNext {
+    bottom: 72px;
+    right: 0;
+    left: 0;
+    width: calc(100% - 32px);
+    margin: 0 16px;
+    justify-content: center;
+  }
+  .playerUpNext .playerUpNextInner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .playerUpNext .playerUpNextActions {
+    margin-top: 0;
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 1320px) and (min-width: 761px) {
+  .playerUpNext {
+    bottom: 72px;
+  }
+}
 
 .playerBigPlay {
   align-items: center;

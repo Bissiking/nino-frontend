@@ -39,6 +39,7 @@ type Props = {
 const KEYBOARD_STEPS = 10;
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const PROGRESS_SYNC_MS = 5000;
+const UP_NEXT_LEAD_SECONDS = 30;
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
@@ -82,7 +83,7 @@ export function MediaPlayer({
   const hideTimerRef = useRef<number | null>(null);
   const onlineRef = useRef(true);
   const [ended, setEnded] = useState(false);
-  const [upNextCountdown, setUpNextCountdown] = useState<number | null>(null);
+  const [upNextCancelled, setUpNextCancelled] = useState(false);
 
   const source = api.assetUrl(decision.url);
   const seekStep = KEYBOARD_STEPS;
@@ -98,7 +99,7 @@ export function MediaPlayer({
     resumeAppliedRef.current = false;
     setIsLive(false);
     setEnded(false);
-    setUpNextCountdown(null);
+    setUpNextCancelled(false);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -204,7 +205,7 @@ export function MediaPlayer({
     const video = videoRef.current;
     if (!video) return;
     setEnded(false);
-    setUpNextCountdown(null);
+    setUpNextCancelled(true);
     video.currentTime = Math.max(0, (Number.isFinite(video.duration) ? video.duration : duration) - 15);
     void video.play().catch(() => {});
   }
@@ -311,6 +312,8 @@ export function MediaPlayer({
         event.preventDefault(); seekBy(-Number.MAX_SAFE_INTEGER); break;
       case "End":
         event.preventDefault(); { const v = videoRef.current; if (v) { v.currentTime = v.duration; } } break;
+      case "Escape":
+        if (upNext && onUpNext && !upNextCancelled) { event.preventDefault(); setUpNextCancelled(true); } break;
       default:
         break;
     }
@@ -371,8 +374,8 @@ export function MediaPlayer({
       setPlaying(false);
       setShowControls(true);
       setEnded(true);
-      setUpNextCountdown(upNext && onUpNext ? 30 : null);
       trackProgress(true);
+      if (upNext && onUpNext && !upNextCancelled) onUpNext();
     };
     const onEnterPip = () => setIsPip(true);
     const onLeavePip = () => setIsPip(false);
@@ -426,16 +429,6 @@ export function MediaPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId, profileId, resumePercent, resumePositionSeconds, upNext?.id]);
 
-  useEffect(() => {
-    if (!ended || upNextCountdown == null || !onUpNext) return;
-    if (upNextCountdown <= 0) {
-      onUpNext();
-      return;
-    }
-    const timer = window.setTimeout(() => setUpNextCountdown((value) => value == null ? null : value - 1), 1000);
-    return () => window.clearTimeout(timer);
-  }, [ended, onUpNext, upNextCountdown]);
-
   useEffect(() => () => {
     if (hlsRef.current) hlsRef.current.destroy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -458,6 +451,14 @@ export function MediaPlayer({
   const isSeekable = !live && duration > 0 && Number.isFinite(duration);
   const progressPercent = isSeekable ? (currentTime / duration) * 100 : 0;
   const introEnd = Math.min(duration, introEndSeconds);
+  const remainingSeconds = duration > 0 ? duration - currentTime : Infinity;
+  const upNextLead = Math.min(30, duration || 0);
+  const showUpNext = Boolean(
+    controls && !ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled
+    && remainingSeconds > 0.5 && remainingSeconds <= upNextLead
+  );
+  const upNextCountdownDisplay = Math.max(1, Math.ceil(remainingSeconds));
+  const upNextProgress = upNextLead > 0 ? Math.min(1, Math.max(0, (upNextLead - remainingSeconds) / upNextLead)) : 0;
   const canSkipIntro = controls
     && isSeekable
     && introStartSeconds >= 0
@@ -509,32 +510,48 @@ export function MediaPlayer({
       ) : null}
 
       {controls && ended && ready ? (
-        <div className="playerEnded" role="dialog" aria-label="Fin de lecture">
-          <div className="playerEndedCard">
-            {upNext ? (
-              <>
-                <span className="playerEndedLabel"><Play size={14} fill="currentColor" aria-hidden="true" />À suivre</span>
-                <strong className="playerEndedTitle">{upNext.title}</strong>
-                {upNextCountdown != null ? <p className="playerEndedCountdown" aria-live="polite">Épisode suivant dans <strong>{upNextCountdown} s</strong></p> : null}
-                {upNext.thumbnailUrl ? <img className="playerEndedThumb" src={api.assetUrl(upNext.thumbnailUrl) ?? undefined} alt="" /> : null}
-                <div className="playerEndedActions">
-                  <button className="primaryButton" type="button" onClick={onUpNext ? onUpNext : replayFromEnd}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
-                  {upNextCountdown != null ? <button className="secondaryButton" type="button" onClick={() => setUpNextCountdown(null)}>Annuler</button> : null}
-                  <button className="secondaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir la fin</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <span className="playerEndedLabel">Lecture terminée</span>
-                <strong className="playerEndedTitle">Merci d’avoir regardé ce contenu.</strong>
-                <div className="playerEndedActions">
-                  <button className="primaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir</button>
-                </div>
-              </>
-            )}
-          </div>
+      <div className="playerEnded" role="dialog" aria-label="Fin de lecture">
+        <div className="playerEndedCard">
+          {upNext && !upNextCancelled ? (
+            <>
+              <span className="playerEndedLabel"><Play size={14} fill="currentColor" aria-hidden="true" />À suivre</span>
+              <strong className="playerEndedTitle">{upNext.title}</strong>
+              <div className="playerEndedActions">
+                <button className="primaryButton" type="button" onClick={onUpNext ? onUpNext : replayFromEnd}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
+                <button className="secondaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir la fin</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="playerEndedLabel">Lecture terminée</span>
+              <strong className="playerEndedTitle">Merci d’avoir regardé ce contenu.</strong>
+              <div className="playerEndedActions">
+                <button className="primaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir</button>
+              </div>
+            </>
+          )}
         </div>
-      ) : null}
+      </div>
+    ) : null}
+
+    {showUpNext ? (
+      <div
+        className="playerUpNext"
+        role="dialog"
+        aria-label="Épisode suivant"
+        style={{ '--upnext-progress': `${upNextProgress * 100}%` } as React.CSSProperties}
+      >
+        <div className="playerUpNextInner">
+          <div className="playerUpNextLabel"><Play size={13} fill="currentColor" aria-hidden="true" />Épisode suivant</div>
+          <div className="playerUpNextTimer" aria-live="polite">dans {upNextCountdownDisplay}</div>
+          <strong className="playerUpNextTitle">{upNext!.title}</strong>
+        </div>
+        <div className="playerUpNextActions">
+          <button className="primaryButton" type="button" onClick={onUpNext}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
+          <button className="secondaryButton" type="button" onClick={() => setUpNextCancelled(true)}>Annuler</button>
+        </div>
+      </div>
+    ) : null}
 
       {(controls || tapToToggle) && ready && !error && !offline && !playing && !ended ? (
         <div className="playerBigPlay" role="presentation">
