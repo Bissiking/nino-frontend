@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
+import { CarouselViewport } from "./CarouselViewport";
 
 export function HomeTopTen({ items, title }: { items: MediaItem[]; title?: string }) {
   if (!items.length) return null;
@@ -8,7 +9,7 @@ export function HomeTopTen({ items, title }: { items: MediaItem[]; title?: strin
   return (
     <section className="topTen" id="top10" aria-labelledby="top-ten-title">
       <div className="railHeader"><h2 id="top-ten-title">{title ?? `Top ${items.length} cette semaine`}</h2><span>Les tendances sur Nino</span></div>
-      <ol className="topTenList">
+      <CarouselViewport className="topTenList" label={title ?? `Top ${items.length} cette semaine`} ordered>
         {items.map((item, index) => (
           <li key={item.id}>
             <Link href={`/watch/${item.id}`} className="topTenItem focusTile" aria-label={`${index + 1}. ${item.title}`}>
@@ -20,7 +21,7 @@ export function HomeTopTen({ items, title }: { items: MediaItem[]; title?: strin
             </Link>
           </li>
         ))}
-      </ol>
+      </CarouselViewport>
     </section>
   );
 }
