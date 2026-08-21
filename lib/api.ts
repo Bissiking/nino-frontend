@@ -264,7 +264,7 @@ export const api = {
   search: (query: string) => request<{ query: string; items: MediaItem[] }>(`/api/v1/search?q=${encodeURIComponent(query)}`),
   streamDecision: (id: string) => request<StreamDecision>(`/api/v1/stream/${id}/decision`),
   progress: (id: string, profileId: string, positionSeconds: number, durationSeconds: number) =>
-    request<{ media_id: string; profile_id: string; percent: number }>(`/api/v1/media/${id}/progress`, {
+    request<{ media_id: string; profile_id: string; percent: number; position_seconds: number }>(`/api/v1/media/${id}/progress`, {
       method: "POST",
       body: JSON.stringify({
         profile_id: profileId,

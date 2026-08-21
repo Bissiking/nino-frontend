@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CalendarClock, ChevronRight, Flame, Lock, Play, RotateCw } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronRight, Clock3, Flame, Lock, Play, RotateCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Markdown } from "@/components/Markdown";
 import { MediaCard } from "@/components/MediaCard";
@@ -16,16 +16,33 @@ import { getProfileId } from "@/lib/session";
 import { CATEGORIES, CONTENT_FLAGS } from "@/types/nino";
 import type { MediaItem, SeriesEpisodeEntry, SeriesPage, StreamDecision } from "@/types/nino";
 
-function Chips({ category, tags, flags }: { category?: string | null; tags?: string[]; flags?: string[] }) {
+function Chips({ category, flags }: { category?: string | null; flags?: string[] }) {
   const items: Array<{ key: string; label: string; tone?: string }> = [];
   if (category) items.push({ key: "category", label: CATEGORIES[category] ?? category });
-  (tags ?? []).forEach((tag) => items.push({ key: `tag-${tag}`, label: tag }));
   (flags ?? []).forEach((flag) => items.push({ key: `flag-${flag}`, label: CONTENT_FLAGS[flag] ?? flag, tone: "isWarning" }));
   if (!items.length) return null;
   return (
     <ul className="watchChips">
       {items.map((item) => <li key={item.key} className={item.tone ?? ""}>{item.label}</li>)}
     </ul>
+  );
+}
+
+function formatDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} h${minutes % 60 ? ` ${String(minutes % 60).padStart(2, "0")}` : ""}`;
+}
+
+function ExpandableDescription({ children }: { children: string }) {
+  if (!children.trim()) return null;
+  return (
+    <details className="watchDescription">
+      <summary>À propos <ChevronDown size={18} aria-hidden="true" /></summary>
+      <Markdown>{children}</Markdown>
+    </details>
   );
 }
 
@@ -106,8 +123,8 @@ function EpisodeSeries({ media, series }: { media: MediaItem; series: SeriesPage
       {series.seasons.length ? (
         <div className="seriesSeasons">
           {series.seasons.map((season) => (
-            <section key={season.season_number} className="seriesSeason">
-              <h3>Saison {season.season_number}</h3>
+            <details key={season.season_number} className="seriesSeason" open={season.season_number === (media.season_number ?? 1)}>
+              <summary>Saison {season.season_number}<span>{season.episodes.length} épisode{season.episodes.length > 1 ? "s" : ""}<ChevronDown size={18} aria-hidden="true" /></span></summary>
               <ol className="episodeGrid">
                 {season.episodes.map((episode) => {
                   const isCurrent = episode.id === media.id;
@@ -117,13 +134,13 @@ function EpisodeSeries({ media, series }: { media: MediaItem; series: SeriesPage
                       {episode.is_released ? (
                         <Link className={`episodeRow ${isCurrent ? "isCurrent" : ""} ${isNext ? "isNext" : ""}`} href={`/watch/${encodeURIComponent(episode.id)}`} aria-current={isCurrent ? "true" : undefined}>
                           <span className="episodeNumber">{isCurrent ? <Play size={15} fill="currentColor" aria-hidden="true" /> : isNext ? "Suivant" : `E${episode.episode_number}`}</span>
-                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong></span>
+                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong>{formatDuration(episode.duration_seconds) ? <small><Clock3 size={13} aria-hidden="true" />{formatDuration(episode.duration_seconds)}</small> : null}</span>
                           <Play size={17} aria-hidden="true" />
                         </Link>
                       ) : (
                         <span className="episodeRow isLockedRow">
                           <span className="episodeNumber"><Lock size={15} aria-hidden="true" /></span>
-                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong></span>
+                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong>{formatDuration(episode.duration_seconds) ? <small><Clock3 size={13} aria-hidden="true" />{formatDuration(episode.duration_seconds)}</small> : null}</span>
                           <span className="episodeRelease"><CalendarClock size={14} aria-hidden="true" />{formatPublishDate(episode.publish_at) || "Bientôt"}</span>
                         </span>
                       )}
@@ -131,7 +148,7 @@ function EpisodeSeries({ media, series }: { media: MediaItem; series: SeriesPage
                   );
                 })}
               </ol>
-            </section>
+            </details>
           ))}
         </div>
       ) : null}
@@ -144,19 +161,18 @@ function SeriesDetail({ media, series }: { media: MediaItem; series: SeriesPage 
     <section className="watchSurface seriesSurface">
       <div className="seriesBackdrop" style={api.assetUrl(media.backdrop_url) ? { backgroundImage: `url(${JSON.stringify(api.assetUrl(media.backdrop_url))})` } : undefined}>
         <div>
-          <span className="seriesKind">Série</span>
           <h1>{media.title}</h1>
           <p>{media.synopsis}</p>
-          <Chips category={media.category} tags={media.tags} flags={media.is_adult ? media.content_flags : undefined} />
+          <Chips category={media.category} flags={media.is_adult ? media.content_flags : undefined} />
           {media.no_spoil ? <p className="noSpoilNote">Les prochains épisodes apparaîtront uniquement le jour de leur sortie.</p> : null}
         </div>
       </div>
-      <Markdown>{media.description}</Markdown>
+      <ExpandableDescription>{media.description}</ExpandableDescription>
       {series.seasons.length ? (
         <div className="seriesSeasons">
-          {series.seasons.map((season) => (
-            <section key={season.season_number} className="seriesSeason">
-              <h2>Saison {season.season_number}</h2>
+          {series.seasons.map((season, seasonIndex) => (
+            <details key={season.season_number} className="seriesSeason" open={seasonIndex === 0}>
+              <summary>Saison {season.season_number}<span>{season.episodes.length} épisode{season.episodes.length > 1 ? "s" : ""}<ChevronDown size={18} aria-hidden="true" /></span></summary>
               {season.episodes.length ? (
                 <ol className="episodeGrid">
                   {season.episodes.map((episode) => (
@@ -164,14 +180,14 @@ function SeriesDetail({ media, series }: { media: MediaItem; series: SeriesPage 
                       {episode.is_released ? (
                         <Link className="episodeRow" href={`/watch/${encodeURIComponent(episode.id)}`}>
                           <span className="episodeNumber">E{episode.episode_number}</span>
-                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong></span>
+                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong>{formatDuration(episode.duration_seconds) ? <small><Clock3 size={13} aria-hidden="true" />{formatDuration(episode.duration_seconds)}</small> : null}</span>
                           {media.is_adult ? <span className="episodeAdult"><Flame size={15} aria-hidden="true" />18+</span> : null}
                           <Play size={17} aria-hidden="true" />
                         </Link>
                       ) : (
                         <span className="episodeRow isLockedRow">
                           <span className="episodeNumber"><Lock size={15} aria-hidden="true" /></span>
-                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong></span>
+                          <span className="episodeText"><strong>{episode.title || `Épisode ${episode.episode_number}`}</strong>{formatDuration(episode.duration_seconds) ? <small><Clock3 size={13} aria-hidden="true" />{formatDuration(episode.duration_seconds)}</small> : null}</span>
                           <span className="episodeRelease"><CalendarClock size={14} aria-hidden="true" />{formatPublishDate(episode.publish_at) || "Bientôt"}</span>
                         </span>
                       )}
@@ -181,7 +197,7 @@ function SeriesDetail({ media, series }: { media: MediaItem; series: SeriesPage 
               ) : (
                 <p className="seriesSeasonEmpty">Aucun épisode disponible pour le moment.</p>
               )}
-            </section>
+            </details>
           ))}
         </div>
       ) : null}
@@ -262,6 +278,7 @@ export default function WatchPage() {
                   mediaId={media.id}
                   profileId={getProfileId()}
                   resumePercent={restartToken > 0 ? 0 : media.progress_percent}
+                  resumePositionSeconds={restartToken > 0 ? 0 : media.position_seconds}
                   introStartSeconds={media.intro_start_seconds}
                   introEndSeconds={media.intro_end_seconds}
                   upNext={isEpisode && nextEpisode ? { id: nextEpisode.id, title: nextEpisode.title || `Épisode ${nextEpisode.episode_number}` } : null}
@@ -274,7 +291,7 @@ export default function WatchPage() {
                 <h1>{media.title}</h1>
                 {isEpisode && media.series_source_id ? <p className="watchEpisodeTag">Épisode {media.episode_number ?? ""}{media.season_number ? ` · Saison ${media.season_number}` : ""}</p> : null}
                 <p>{media.synopsis}</p>
-                <Chips category={media.category} tags={media.tags} flags={media.is_adult ? media.content_flags : undefined} />
+                <Chips category={media.category} flags={media.is_adult ? media.content_flags : undefined} />
                 <MediaActions mediaId={media.id} initialLiked={media.liked} initialFavorited={media.favorited} initialLikeCount={media.like_count} />
               </div>
               {media.progress_percent > 0 && media.progress_percent < 95 ? (
@@ -283,7 +300,7 @@ export default function WatchPage() {
                   Recommencer
                 </button>
               ) : null}
-              {media.description ? <Markdown>{media.description}</Markdown> : null}
+              <ExpandableDescription>{media.description}</ExpandableDescription>
             </div>
           </section>
           {isEpisode && series ? <EpisodeSeries media={media} series={series} /> : null}

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { HomeRail } from "@/types/nino";
@@ -15,8 +18,9 @@ const MORE_LINKS: Record<string, string> = {
 };
 
 export function Rail({ rail }: { rail: HomeRail }) {
+  const [seenIds, setSeenIds] = useState<string[]>([]);
   const portrait = rail.id === "shorts";
-  const items = rail.items.slice(0, PREVIEW_LIMIT);
+  const items = rail.items.filter((item) => !seenIds.includes(item.id)).slice(0, PREVIEW_LIMIT);
   const moreHref = MORE_LINKS[rail.id];
   return (
     <section className={`rail ${portrait ? "homeFlashyRail" : ""}`} id={rail.id} aria-labelledby={`rail-${rail.id}`}>
@@ -26,9 +30,9 @@ export function Rail({ rail }: { rail: HomeRail }) {
       </div>
       {items.length ? (
         <CarouselViewport className={`railScroller ${portrait ? "portraitScroller" : ""}`} label={rail.title}>
-          {items.map((item, index) => <MediaCard item={item} key={item.id} priority={index < 3} portrait={portrait} resume={rail.id === "continue"} />)}
+          {items.map((item, index) => <MediaCard item={item} key={item.id} priority={index < 3} portrait={portrait} resume={rail.id === "continue"} onSeen={rail.id === "continue" ? (id) => setSeenIds((current) => [...current, id]) : undefined} />)}
         </CarouselViewport>
-      ) : <EmptyState title="Rien à afficher pour l’instant" message="De nouveaux programmes apparaîtront ici dès qu’ils seront disponibles." />}
+      ) : <EmptyState title={rail.id === "continue" ? "Tout est à jour" : "Rien à afficher pour l’instant"} message={rail.id === "continue" ? "Vous n’avez aucune lecture à reprendre." : "De nouveaux programmes apparaîtront ici dès qu’ils seront disponibles."} />}
     </section>
   );
 }

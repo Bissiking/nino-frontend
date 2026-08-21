@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Home, LibraryBig, PanelsTopLeft, Radio, Search, Zap } from "lucide-react";
+import { Film, Home, LibraryBig, Radio, Search, Zap } from "lucide-react";
 import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
 import pkg from "@/package.json";
@@ -42,7 +42,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="topActions">
-          <Link className="studioShortcut" href="/studio" aria-label="Ouvrir Nino Studio"><PanelsTopLeft size={20} aria-hidden="true" /></Link>
           <ProfileMenu />
         </div>
       </header>

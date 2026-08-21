@@ -54,7 +54,7 @@ Règles de versionnement :
 Version initiale demandée pour la livraison :
 
 ```python
-FastAPI(title="Nino Backend", version="8.1.0", openapi_url="/api/v1/openapi.json")
+FastAPI(title="Nino Backend", version="8.7.0", openapi_url="/api/v1/openapi.json")
 ```
 
 ## Règles globales
@@ -441,7 +441,7 @@ Le frontend actuel consomme directement `data` comme `MediaItem[]` et tolère le
 
 ### `GET /api/v1/media/{media_id}?profile_id={profile_id}`
 
-Retourne un `MediaItem` complet. `progress_percent` doit être calculé pour le profil demandé et autorisé.
+Retourne un `MediaItem` complet. `progress_percent` doit être calculé pour le profil demandé et autorisé. Lorsque ce profil possède une progression, `position_seconds` expose la position exacte de reprise.
 
 Réponse `200` : enveloppe contenant un `MediaItem`.
 
@@ -571,6 +571,7 @@ Validation :
 - `device` est facultatif, maximum 120 caractères ;
 - le pourcentage est borné entre `0` et `100` ;
 - idéalement, rejeter ou normaliser une position supérieure à la durée.
+- pour un média `short` (Flashy), l'appel enregistre uniquement une vue terminée (`percent: 100`) : il ne crée jamais de reprise de lecture et le média est exclu du rail `continue`.
 
 Réponse `200` :
 
@@ -580,7 +581,8 @@ Réponse `200` :
   "data": {
     "media_id": "media-uuid",
     "profile_id": "profile-uuid",
-    "percent": 47.83
+    "percent": 47.83,
+    "position_seconds": 1320
   },
   "meta": {}
 }
@@ -725,7 +727,7 @@ Publique, sans authentification.
   "data": {
     "status": "ok",
     "service": "nino-backend",
-    "version": "8.1.0"
+    "version": "8.7.0"
   },
   "meta": {}
 }

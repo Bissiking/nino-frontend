@@ -34,7 +34,7 @@ import { ErrorState } from "@/components/StateBlock";
 import { MediaEditor } from "@/components/studio/MediaEditor";
 import { api } from "@/lib/api";
 import { VISIBILITY_LABELS } from "@/types/nino";
-import type { AdminEpisodes, MediaItem, StorageIndexReport } from "@/types/nino";
+import type { AdminEpisodes, MediaItem } from "@/types/nino";
 
 type StudioView = "overview" | "videos" | "series" | "flashy" | "schedule" | "live" | "administration";
 type EditorialLane = "prepare" | "scheduled" | "published";
@@ -376,7 +376,7 @@ function SeriesWorkspace({ series, onOpen, onCreate }: { series: MediaItem[]; on
   );
 }
 
-function AdministrationWorkspace({ stats, indexing, indexReport, indexError, onIndexStorage }: { stats: Stats; indexing: boolean; indexReport: StorageIndexReport | null; indexError: string | null; onIndexStorage: () => void }) {
+function AdministrationWorkspace({ stats }: { stats: Stats }) {
   const rows: Array<[string, number, LucideIcon, string]> = [
     ["Médias", stats.media, Film, "Contenus enregistrés"],
     ["Utilisateurs", stats.users, Users, "Comptes Nino"],
@@ -388,12 +388,6 @@ function AdministrationWorkspace({ stats, indexing, indexReport, indexError, onI
     <>
       <header className="studioCommandHeader"><div><h1>Système</h1><p>État administratif réellement exposé par Nino V8.</p></div></header>
       <section className="studioSystemTable"><header><span>Ressource</span><span>État</span><span>Volume</span></header>{rows.map(([label, value, Icon, description]) => <div key={label}><Icon size={19} aria-hidden="true" /><span><strong>{label}</strong><small>{description}</small></span><span className="studioSystemUnknown">Non exposé par l’API</span><b>{value}</b></div>)}</section>
-      <section className="studioStorageIndexer" aria-labelledby="studio-storage-index-title">
-        <div className="studioStorageIndexerCopy"><ScanLine size={22} aria-hidden="true" /><div><h2 id="studio-storage-index-title">Stockage HLS existant</h2><p>Détecte les dossiers LUMA configurés dans <code>NINO_MEDIA_DIR</code>, sans déplacer ni réencoder les segments.</p></div></div>
-        <button className="secondaryButton" type="button" onClick={onIndexStorage} disabled={indexing}>{indexing ? <Loader2 className="spin" size={18} aria-hidden="true" /> : <ScanLine size={18} aria-hidden="true" />}{indexing ? "Indexation…" : "Indexer le stockage"}</button>
-        {indexReport ? <p className={indexReport.errors.length ? "studioStorageIndexResult hasWarnings" : "studioStorageIndexResult"} role="status">{indexReport.discovered} dossier{indexReport.discovered > 1 ? "s" : ""} détecté{indexReport.discovered > 1 ? "s" : ""} · {indexReport.created} créé{indexReport.created > 1 ? "s" : ""} · {indexReport.updated} actualisé{indexReport.updated > 1 ? "s" : ""}{indexReport.errors.length ? ` · ${indexReport.errors.length} erreur${indexReport.errors.length > 1 ? "s" : ""}` : ""}</p> : null}
-        {indexError ? <p className="studioStorageIndexResult isError" role="alert">{indexError}</p> : null}
-      </section>
       <section className="studioStorageIndexer" aria-labelledby="studio-transcode-title">
         <div className="studioStorageIndexerCopy"><Activity size={22} aria-hidden="true" /><div><h2 id="studio-transcode-title">Worker et file de transcodage</h2><p>Démarrer ou arrêter le worker, suivre son statut et les jobs en temps réel.</p></div></div>
         <Link className="secondaryButton" href="/studio/transcode"><Activity size={18} aria-hidden="true" /> Ouvrir le transcodage</Link>
@@ -412,9 +406,6 @@ export default function StudioPage() {
   const [error, setError] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [creating, setCreating] = useState<CreateKind | null>(null);
-  const [indexingStorage, setIndexingStorage] = useState(false);
-  const [storageIndexReport, setStorageIndexReport] = useState<StorageIndexReport | null>(null);
-  const [storageIndexError, setStorageIndexError] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
 
   function load(background = false) {
@@ -460,21 +451,6 @@ export default function StudioPage() {
     setCreating(null);
   }
 
-  async function indexStorage() {
-    setIndexingStorage(true);
-    setStorageIndexError(null);
-    setStorageIndexReport(null);
-    try {
-      const report = await api.indexMediaStorage();
-      setStorageIndexReport(report);
-      load(true);
-    } catch (reason) {
-      setStorageIndexError(reason instanceof Error ? reason.message : "L’indexation du stockage HLS a échoué.");
-    } finally {
-      setIndexingStorage(false);
-    }
-  }
-
   const live = media.filter((item) => item.kind === "live");
   const prepared = media.filter((item) => laneFor(item, now) === "prepare").length;
   const scheduled = media.filter((item) => laneFor(item, now) === "scheduled").length;
@@ -507,7 +483,7 @@ export default function StudioPage() {
               {!creating && view === "series" ? <SeriesWorkspace series={media.filter((item) => item.kind === "series")} onOpen={(id) => router.push(`/studio/media/${encodeURIComponent(id)}`)} onCreate={() => setCreating("series")} /> : null}
               {!creating && view === "schedule" ? <ScheduleWorkspace media={media} now={now} /> : null}
               {!creating && view === "live" ? <LiveWorkspace liveItems={live} /> : null}
-              {!creating && view === "administration" ? <AdministrationWorkspace stats={stats} indexing={indexingStorage} indexReport={storageIndexReport} indexError={storageIndexError} onIndexStorage={() => void indexStorage()} /> : null}
+              {!creating && view === "administration" ? <AdministrationWorkspace stats={stats} /> : null}
             </main>
           ) : null}
         </div>

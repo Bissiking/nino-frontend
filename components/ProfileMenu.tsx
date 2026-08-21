@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, LogOut, PanelsTopLeft, Search, Settings, UserRound, UsersRound, X } from "lucide-react";
+import { Home, LogOut, PanelsTopLeft, Search, UserRound, UsersRound, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { clearSession, getProfileId, getRefreshToken } from "@/lib/session";
 import pkg from "@/package.json";
@@ -119,7 +119,6 @@ export function ProfileMenu() {
                 <section aria-labelledby="profile-admin-title">
                   <h3 id="profile-admin-title">Administration</h3>
                   <Link href="/studio" onClick={() => setOpen(false)}><PanelsTopLeft size={19} aria-hidden="true" />Nino Studio</Link>
-                  <Link href="/studio#administration" onClick={() => setOpen(false)}><Settings size={19} aria-hidden="true" />Système</Link>
                 </section>
               ) : null}
 

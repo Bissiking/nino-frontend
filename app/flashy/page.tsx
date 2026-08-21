@@ -150,7 +150,6 @@ function FlashyInfo({ item, profileId, open, onClose, onOpenItem }: {
   const chips: Array<{ key: string; label: string; tone?: string }> = [];
   if (item.category) chips.push({ key: "category", label: CATEGORIES[item.category] ?? item.category });
   item.genres.forEach((genre) => chips.push({ key: `genre-${genre}`, label: genre }));
-  item.tags.forEach((tag) => chips.push({ key: `tag-${tag}`, label: tag }));
   item.content_flags.forEach((flag) => chips.push({ key: `flag-${flag}`, label: CONTENT_FLAGS[flag] ?? flag, tone: "isWarning" }));
   const duration = formatDuration(item.duration_seconds);
 
@@ -219,6 +218,7 @@ const FlashyItem = forwardRef<HTMLElement, FlashyItemProps>(function FlashyItem(
   const [loaded, setLoaded] = useState(false);
   const [adultConfirmed, setAdultConfirmed] = useState(false);
   const thumbnailRequestedRef = useRef(false);
+  const viewRecordedRef = useRef(false);
   const poster = api.assetUrl(item.thumbnail_vertical_url ?? item.poster_url);
 
   useEffect(() => {
@@ -246,6 +246,15 @@ const FlashyItem = forwardRef<HTMLElement, FlashyItemProps>(function FlashyItem(
 
   const showPlayer = loaded && active && decision && !decisionFailed && Boolean(item.source_kind) && (!item.is_adult || adultConfirmed);
   const showWarning = active && item.is_adult && !adultConfirmed && !decisionFailed && Boolean(item.source_kind);
+
+  useEffect(() => {
+    if (!showPlayer || !profileId || viewRecordedRef.current) return;
+    viewRecordedRef.current = true;
+    const duration = Math.max(1, item.duration_seconds);
+    api.progress(item.id, profileId, duration, duration).catch(() => {
+      viewRecordedRef.current = false;
+    });
+  }, [item.duration_seconds, item.id, profileId, showPlayer]);
 
   return (
     <article ref={ref} className="flashyItem" aria-current={active ? "true" : undefined}>

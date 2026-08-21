@@ -27,6 +27,7 @@ type Props = {
   mediaId?: string;
   profileId?: string | null;
   resumePercent?: number;
+  resumePositionSeconds?: number | null;
   introStartSeconds?: number;
   introEndSeconds?: number;
   upNext?: PlayerUpNext | null;
@@ -51,7 +52,7 @@ function formatTime(seconds: number): string {
 
 export function MediaPlayer({
   decision, poster, controls = true, autoPlay = false, muted = false, loop = false, tapToToggle = false, className,
-  mediaId, profileId, resumePercent = 0, introStartSeconds = 0, introEndSeconds = 0,
+  mediaId, profileId, resumePercent = 0, resumePositionSeconds = null, introStartSeconds = 0, introEndSeconds = 0,
   upNext = null, onUpNext, onProgress, onMutedChange = () => {}
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,6 +82,7 @@ export function MediaPlayer({
   const hideTimerRef = useRef<number | null>(null);
   const onlineRef = useRef(true);
   const [ended, setEnded] = useState(false);
+  const [upNextCountdown, setUpNextCountdown] = useState<number | null>(null);
 
   const source = api.assetUrl(decision.url);
   const seekStep = KEYBOARD_STEPS;
@@ -96,6 +98,7 @@ export function MediaPlayer({
     resumeAppliedRef.current = false;
     setIsLive(false);
     setEnded(false);
+    setUpNextCountdown(null);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -168,7 +171,10 @@ export function MediaPlayer({
     if (!video || resumeAppliedRef.current) return;
     if (!Number.isFinite(video.duration) || video.duration <= 0) return;
     const percent = resumePercent ?? 0;
-    if (percent > 0 && percent < 95) {
+    const exactPosition = resumePositionSeconds ?? 0;
+    if (exactPosition > 0 && exactPosition < video.duration * 0.95) {
+      video.currentTime = Math.min(exactPosition, Math.max(0, video.duration - 1));
+    } else if (percent > 0 && percent < 95) {
       video.currentTime = (percent / 100) * video.duration;
     }
     resumeAppliedRef.current = true;
@@ -178,11 +184,11 @@ export function MediaPlayer({
     return duration === Infinity;
   }
 
-  function trackProgress() {
+  function trackProgress(force = false) {
     const video = videoRef.current;
     if (!video || !mediaId) return;
     const now = performance.now();
-    if (now - lastProgressRef.current < PROGRESS_SYNC_MS) return;
+    if (!force && now - lastProgressRef.current < PROGRESS_SYNC_MS) return;
     lastProgressRef.current = now;
     if (!Number.isFinite(video.duration) || video.duration <= 0) return;
     if (!Number.isFinite(video.currentTime) || video.currentTime < 0) return;
@@ -192,6 +198,15 @@ export function MediaPlayer({
     if (mediaId && profileId) {
       api.progress(mediaId, profileId, video.currentTime, video.duration).catch(() => {});
     }
+  }
+
+  function replayFromEnd() {
+    const video = videoRef.current;
+    if (!video) return;
+    setEnded(false);
+    setUpNextCountdown(null);
+    video.currentTime = Math.max(0, (Number.isFinite(video.duration) ? video.duration : duration) - 15);
+    void video.play().catch(() => {});
   }
 
   function togglePlay() {
@@ -339,7 +354,7 @@ export function MediaPlayer({
     const video = videoRef.current;
     if (!video) return;
     const onPlay = () => { setPlaying(true); setBuffering(false); pokeControls(); };
-    const onPause = () => { setPlaying(false); setShowControls(true); };
+    const onPause = () => { setPlaying(false); setShowControls(true); trackProgress(true); };
     const onWaiting = () => setBuffering(true);
     const onPlaying = () => setBuffering(false);
     const onTime = () => { setCurrentTime(video.currentTime); trackProgress(); };
@@ -352,7 +367,13 @@ export function MediaPlayer({
     const onVolume = () => { setVolume(video.volume); setMutedState(video.muted); };
     const onSpeed = () => setSpeed(video.playbackRate);
     const onVideoError = () => setError("Impossible de charger cette source.");
-    const onEnded = () => { setPlaying(false); setShowControls(true); setEnded(true); };
+    const onEnded = () => {
+      setPlaying(false);
+      setShowControls(true);
+      setEnded(true);
+      setUpNextCountdown(upNext && onUpNext ? 30 : null);
+      trackProgress(true);
+    };
     const onEnterPip = () => setIsPip(true);
     const onLeavePip = () => setIsPip(false);
 
@@ -376,8 +397,13 @@ export function MediaPlayer({
 
     const updateFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", updateFullscreen);
+    const saveBeforeLeaving = () => trackProgress(true);
+    const saveWhenHidden = () => { if (document.visibilityState === "hidden") trackProgress(true); };
+    window.addEventListener("pagehide", saveBeforeLeaving);
+    document.addEventListener("visibilitychange", saveWhenHidden);
 
     return () => {
+      trackProgress(true);
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
       video.removeEventListener("waiting", onWaiting);
@@ -393,10 +419,22 @@ export function MediaPlayer({
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("online", onOnline);
       document.removeEventListener("fullscreenchange", updateFullscreen);
+      window.removeEventListener("pagehide", saveBeforeLeaving);
+      document.removeEventListener("visibilitychange", saveWhenHidden);
       if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaId, profileId, resumePercent]);
+  }, [mediaId, profileId, resumePercent, resumePositionSeconds, upNext?.id]);
+
+  useEffect(() => {
+    if (!ended || upNextCountdown == null || !onUpNext) return;
+    if (upNextCountdown <= 0) {
+      onUpNext();
+      return;
+    }
+    const timer = window.setTimeout(() => setUpNextCountdown((value) => value == null ? null : value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [ended, onUpNext, upNextCountdown]);
 
   useEffect(() => () => {
     if (hlsRef.current) hlsRef.current.destroy();
@@ -477,10 +515,12 @@ export function MediaPlayer({
               <>
                 <span className="playerEndedLabel"><Play size={14} fill="currentColor" aria-hidden="true" />À suivre</span>
                 <strong className="playerEndedTitle">{upNext.title}</strong>
+                {upNextCountdown != null ? <p className="playerEndedCountdown" aria-live="polite">Épisode suivant dans <strong>{upNextCountdown} s</strong></p> : null}
                 {upNext.thumbnailUrl ? <img className="playerEndedThumb" src={api.assetUrl(upNext.thumbnailUrl) ?? undefined} alt="" /> : null}
                 <div className="playerEndedActions">
-                  <button className="primaryButton" type="button" onClick={onUpNext ? onUpNext : () => { setEnded(false); togglePlay(); }}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
-                  <button className="secondaryButton" type="button" onClick={() => { setEnded(false); togglePlay(); }}><RotateCw size={16} aria-hidden="true" />Revoir la fin</button>
+                  <button className="primaryButton" type="button" onClick={onUpNext ? onUpNext : replayFromEnd}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
+                  {upNextCountdown != null ? <button className="secondaryButton" type="button" onClick={() => setUpNextCountdown(null)}>Annuler</button> : null}
+                  <button className="secondaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir la fin</button>
                 </div>
               </>
             ) : (
@@ -488,7 +528,7 @@ export function MediaPlayer({
                 <span className="playerEndedLabel">Lecture terminée</span>
                 <strong className="playerEndedTitle">Merci d’avoir regardé ce contenu.</strong>
                 <div className="playerEndedActions">
-                  <button className="primaryButton" type="button" onClick={() => { setEnded(false); togglePlay(); }}><RotateCw size={16} aria-hidden="true" />Revoir</button>
+                  <button className="primaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir</button>
                 </div>
               </>
             )}
