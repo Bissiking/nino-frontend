@@ -263,16 +263,23 @@ export const api = {
     request<SeriesPage>(`/api/v1/media/${id}/series${profileId ? `?profile_id=${profileId}` : ""}`),
   search: (query: string) => request<{ query: string; items: MediaItem[] }>(`/api/v1/search?q=${encodeURIComponent(query)}`),
   streamDecision: (id: string) => request<StreamDecision>(`/api/v1/stream/${id}/decision`),
-  progress: (id: string, profileId: string, positionSeconds: number, durationSeconds: number) =>
-    request<{ media_id: string; profile_id: string; percent: number; position_seconds: number }>(`/api/v1/media/${id}/progress`, {
+  progress: (id: string, profileId: string, positionSeconds: number, durationSeconds: number) => {
+    const normalizedDuration = Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? Math.max(1, Math.round(durationSeconds))
+      : 0;
+    const normalizedPosition = Number.isFinite(positionSeconds)
+      ? Math.max(0, Math.min(normalizedDuration || Number.MAX_SAFE_INTEGER, Math.round(positionSeconds)))
+      : 0;
+    return request<{ media_id: string; profile_id: string; percent: number; position_seconds: number }>(`/api/v1/media/${id}/progress`, {
       method: "POST",
       body: JSON.stringify({
         profile_id: profileId,
-        position_seconds: positionSeconds,
-        duration_seconds: durationSeconds,
+        position_seconds: normalizedPosition,
+        duration_seconds: normalizedDuration,
         device: "web"
       })
-    }),
+    });
+  },
   notifications: (profileId?: string | null) =>
     request<NotificationItem[]>(`/api/v1/notifications${profileId ? `?profile_id=${profileId}` : ""}`),
   mediaInteractions: (mediaId: string, profileId?: string | null) =>
