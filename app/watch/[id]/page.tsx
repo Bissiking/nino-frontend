@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CalendarClock, ChevronDown, ChevronRight, Clock3, Flame, Lock, Play, RotateCw } from "lucide-react";
@@ -207,13 +207,9 @@ function SeriesDetail({ media, series }: { media: MediaItem; series: SeriesPage 
   );
 }
 
-function runNextEpisode(next: SeriesEpisodeEntry) {
-  const router = useRouter();
-  router.push(`/watch/${encodeURIComponent(next.id)}`);
-}
-
 export default function WatchPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [media, setMedia] = useState<MediaItem | null>(null);
   const [series, setSeries] = useState<SeriesPage | null>(null);
   const [decision, setDecision] = useState<StreamDecision | null>(null);
@@ -225,6 +221,10 @@ export default function WatchPage() {
   const isEpisode = media?.series_source_id != null;
   const isSeries = media?.kind === "series";
   const nextEpisode = useMemo(() => (media ? findNextEpisode(media, series) : null), [media, series]);
+  const playNextEpisode = useCallback(() => {
+    if (!nextEpisode) return;
+    router.push(`/watch/${encodeURIComponent(nextEpisode.id)}`);
+  }, [nextEpisode, router]);
 
   function load() {
     const profileId = getProfileId();
@@ -283,7 +283,7 @@ export default function WatchPage() {
                   introStartSeconds={media.intro_start_seconds}
                   introEndSeconds={media.intro_end_seconds}
                   upNext={isEpisode && nextEpisode ? { id: nextEpisode.id, title: nextEpisode.title || `Épisode ${nextEpisode.episode_number}` } : null}
-                  onUpNext={isEpisode && nextEpisode ? () => runNextEpisode(nextEpisode) : undefined}
+                  onUpNext={isEpisode && nextEpisode ? playNextEpisode : undefined}
                   autoPlay={true}
                 />
               ) : null}
