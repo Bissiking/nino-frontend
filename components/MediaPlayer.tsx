@@ -61,6 +61,7 @@ export function MediaPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const lastProgressRef = useRef(0);
   const resumeAppliedRef = useRef(false);
+  const upNextCancelledRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -83,7 +84,6 @@ export function MediaPlayer({
   const hideTimerRef = useRef<number | null>(null);
   const onlineRef = useRef(true);
   const [ended, setEnded] = useState(false);
-  const [upNextCancelled, setUpNextCancelled] = useState(false);
 
   const source = api.assetUrl(decision.url);
   const seekStep = KEYBOARD_STEPS;
@@ -91,7 +91,7 @@ export function MediaPlayer({
   function resetAndResolveSource() {
     const video = videoRef.current;
     if (!video || !source) return;
-    setError(null);
+setError(null);
     setOffline(false);
     setReady(false);
     setQualities([]);
@@ -99,7 +99,7 @@ export function MediaPlayer({
     resumeAppliedRef.current = false;
     setIsLive(false);
     setEnded(false);
-    setUpNextCancelled(false);
+    upNextCancelledRef.current = false;
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -205,7 +205,7 @@ export function MediaPlayer({
     const video = videoRef.current;
     if (!video) return;
     setEnded(false);
-    setUpNextCancelled(true);
+    upNextCancelledRef.current = true;
     video.currentTime = Math.max(0, (Number.isFinite(video.duration) ? video.duration : duration) - 15);
     void video.play().catch(() => {});
   }
@@ -313,7 +313,7 @@ export function MediaPlayer({
       case "End":
         event.preventDefault(); { const v = videoRef.current; if (v) { v.currentTime = v.duration; } } break;
       case "Escape":
-        if (upNext && onUpNext && !upNextCancelled) { event.preventDefault(); setUpNextCancelled(true); } break;
+        if (upNext && onUpNext && !upNextCancelledRef.current) { event.preventDefault(); upNextCancelledRef.current = true; } break;
       default:
         break;
     }
@@ -375,7 +375,7 @@ export function MediaPlayer({
       setShowControls(true);
       setEnded(true);
       trackProgress(true);
-      if (upNext && onUpNext && !upNextCancelled) onUpNext();
+      if (upNext && onUpNext && !upNextCancelledRef.current) onUpNext();
     };
     const onEnterPip = () => setIsPip(true);
     const onLeavePip = () => setIsPip(false);
@@ -454,7 +454,7 @@ export function MediaPlayer({
   const remainingSeconds = duration > 0 ? duration - currentTime : Infinity;
   const upNextLead = Math.min(30, duration || 0);
   const showUpNext = Boolean(
-    controls && !ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled
+    controls && !ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelledRef.current
     && remainingSeconds > 0.5 && remainingSeconds <= upNextLead
   );
   const upNextCountdownDisplay = Math.max(1, Math.ceil(remainingSeconds));
@@ -512,7 +512,7 @@ export function MediaPlayer({
       {controls && ended && ready ? (
       <div className="playerEnded" role="dialog" aria-label="Fin de lecture">
         <div className="playerEndedCard">
-          {upNext && !upNextCancelled ? (
+          {upNext && !upNextCancelledRef.current ? (
             <>
               <span className="playerEndedLabel"><Play size={14} fill="currentColor" aria-hidden="true" />À suivre</span>
               <strong className="playerEndedTitle">{upNext.title}</strong>
@@ -548,7 +548,7 @@ export function MediaPlayer({
         </div>
         <div className="playerUpNextActions">
           <button className="primaryButton" type="button" onClick={onUpNext}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
-          <button className="secondaryButton" type="button" onClick={() => setUpNextCancelled(true)}>Annuler</button>
+          <button className="secondaryButton" type="button" onClick={() => { upNextCancelledRef.current = true; }}>Annuler</button>
         </div>
       </div>
     ) : null}
