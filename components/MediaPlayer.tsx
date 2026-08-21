@@ -40,6 +40,7 @@ const KEYBOARD_STEPS = 10;
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const PROGRESS_SYNC_MS = 5000;
 const UP_NEXT_LEAD_SECONDS = 30;
+const NOOP = () => {};
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
@@ -54,7 +55,7 @@ function formatTime(seconds: number): string {
 export function MediaPlayer({
   decision, poster, controls = true, autoPlay = false, muted = false, loop = false, tapToToggle = false, className,
   mediaId, profileId, resumePercent = 0, resumePositionSeconds = null, introStartSeconds = 0, introEndSeconds = 0,
-  upNext = null, onUpNext, onProgress, onMutedChange = () => {}
+  upNext = null, onUpNext, onProgress, onMutedChange = NOOP
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -62,7 +63,11 @@ export function MediaPlayer({
   const lastProgressRef = useRef(0);
   const resumeAppliedRef = useRef(false);
   const upNextCancelledRef = useRef(false);
+  const upNextTriggeredRef = useRef(false);
+  const onUpNextRef = useRef(onUpNext);
+  const onMutedChangeRef = useRef(onMutedChange);
   const [upNextCancelled, setUpNextCancelled] = useState(false);
+  const [upNextCountdown, setUpNextCountdown] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -92,7 +97,7 @@ export function MediaPlayer({
   function resetAndResolveSource() {
     const video = videoRef.current;
     if (!video || !source) return;
-setError(null);
+    setError(null);
     setOffline(false);
     setReady(false);
     setQualities([]);
@@ -101,7 +106,9 @@ setError(null);
     setIsLive(false);
     setEnded(false);
     upNextCancelledRef.current = false;
+    upNextTriggeredRef.current = false;
     setUpNextCancelled(false);
+    setUpNextCountdown(null);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -209,8 +216,22 @@ setError(null);
     setEnded(false);
     upNextCancelledRef.current = true;
     setUpNextCancelled(true);
+    setUpNextCountdown(null);
     video.currentTime = Math.max(0, (Number.isFinite(video.duration) ? video.duration : duration) - 15);
     void video.play().catch(() => {});
+  }
+
+  function cancelUpNext() {
+    upNextCancelledRef.current = true;
+    setUpNextCancelled(true);
+    setUpNextCountdown(null);
+  }
+
+  function playUpNext() {
+    if (upNextTriggeredRef.current) return;
+    upNextTriggeredRef.current = true;
+    setUpNextCountdown(null);
+    onUpNextRef.current?.();
   }
 
   function togglePlay() {
@@ -316,7 +337,7 @@ setError(null);
       case "End":
         event.preventDefault(); { const v = videoRef.current; if (v) { v.currentTime = v.duration; } } break;
       case "Escape":
-        if (upNext && onUpNext && !upNextCancelled) { event.preventDefault(); setUpNextCancelled(true); } break;
+        if (upNext && onUpNext && !upNextCancelled) { event.preventDefault(); cancelUpNext(); } break;
       default:
         break;
     }
@@ -344,6 +365,14 @@ setError(null);
   }, [muted]);
 
   useEffect(() => {
+    onUpNextRef.current = onUpNext;
+  }, [onUpNext]);
+
+  useEffect(() => {
+    onMutedChangeRef.current = onMutedChange;
+  }, [onMutedChange]);
+
+  useEffect(() => {
     if (!ready || !autoPlay) return;
     const video = videoRef.current;
     if (!video) return;
@@ -351,10 +380,10 @@ setError(null);
       if (video.muted) return;
       video.muted = true;
       setMutedState(true);
-      onMutedChange(true);
+      onMutedChangeRef.current(true);
       void video.play().catch(() => {});
     });
-  }, [ready, autoPlay, onMutedChange]);
+  }, [ready, autoPlay]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -378,7 +407,7 @@ setError(null);
       setShowControls(true);
       setEnded(true);
       trackProgress(true);
-      if (upNext && onUpNext && !upNextCancelled) onUpNext();
+      if (upNext && onUpNextRef.current && !upNextCancelledRef.current) setUpNextCountdown(UP_NEXT_LEAD_SECONDS);
     };
     const onEnterPip = () => setIsPip(true);
     const onLeavePip = () => setIsPip(false);
@@ -432,6 +461,18 @@ setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId, profileId, resumePercent, resumePositionSeconds, upNext?.id]);
 
+  useEffect(() => {
+    if (!ended || upNextCountdown == null || upNextCancelled) return;
+    if (upNextCountdown <= 0) {
+      playUpNext();
+      return;
+    }
+    const timer = window.setTimeout(() => setUpNextCountdown((value) => value == null ? null : value - 1), 1000);
+    return () => window.clearTimeout(timer);
+    // playUpNext intentionally reads the latest callback through onUpNextRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ended, upNextCancelled, upNextCountdown]);
+
   useEffect(() => () => {
     if (hlsRef.current) hlsRef.current.destroy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -454,14 +495,11 @@ setError(null);
   const isSeekable = !live && duration > 0 && Number.isFinite(duration);
   const progressPercent = isSeekable ? (currentTime / duration) * 100 : 0;
   const introEnd = Math.min(duration, introEndSeconds);
-  const remainingSeconds = duration > 0 ? duration - currentTime : Infinity;
-  const upNextLead = Math.min(30, duration || 0);
   const showUpNext = Boolean(
-    controls && !ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled
-    && remainingSeconds > 0.5 && remainingSeconds <= upNextLead
+    controls && ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled
   );
-  const upNextCountdownDisplay = Math.max(1, Math.ceil(remainingSeconds));
-  const upNextProgress = upNextLead > 0 ? Math.min(1, Math.max(0, (upNextLead - remainingSeconds) / upNextLead)) : 0;
+  const upNextCountdownDisplay = upNextCountdown ?? UP_NEXT_LEAD_SECONDS;
+  const upNextProgress = Math.min(1, Math.max(0, (UP_NEXT_LEAD_SECONDS - upNextCountdownDisplay) / UP_NEXT_LEAD_SECONDS));
   const canSkipIntro = controls
     && isSeekable
     && introStartSeconds >= 0
@@ -512,27 +550,14 @@ setError(null);
         </div>
       ) : null}
 
-      {controls && ended && ready ? (
+      {controls && ended && ready && (!upNext || upNextCancelled) ? (
       <div className="playerEnded" role="dialog" aria-label="Fin de lecture">
         <div className="playerEndedCard">
-          {upNext && !upNextCancelled ? (
-            <>
-              <span className="playerEndedLabel"><Play size={14} fill="currentColor" aria-hidden="true" />À suivre</span>
-              <strong className="playerEndedTitle">{upNext.title}</strong>
-              <div className="playerEndedActions">
-                <button className="primaryButton" type="button" onClick={onUpNext ? onUpNext : replayFromEnd}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
-                <button className="secondaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir la fin</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <span className="playerEndedLabel">Lecture terminée</span>
-              <strong className="playerEndedTitle">Merci d’avoir regardé ce contenu.</strong>
-              <div className="playerEndedActions">
-                <button className="primaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir</button>
-              </div>
-            </>
-          )}
+          <span className="playerEndedLabel">Lecture terminée</span>
+          <strong className="playerEndedTitle">Merci d’avoir regardé ce contenu.</strong>
+          <div className="playerEndedActions">
+            <button className="primaryButton" type="button" onClick={replayFromEnd}><RotateCw size={16} aria-hidden="true" />Revoir</button>
+          </div>
         </div>
       </div>
     ) : null}
@@ -540,18 +565,18 @@ setError(null);
     {showUpNext ? (
       <div
         className="playerUpNext"
-        role="dialog"
+        role="region"
         aria-label="Épisode suivant"
-        style={{ '--upnext-progress': `${upNextProgress * 100}%` } as React.CSSProperties}
+        style={{ "--upnext-progress": upNextProgress } as React.CSSProperties}
       >
         <div className="playerUpNextInner">
           <div className="playerUpNextLabel"><Play size={13} fill="currentColor" aria-hidden="true" />Épisode suivant</div>
-          <div className="playerUpNextTimer" aria-live="polite">dans {upNextCountdownDisplay}</div>
+          <div className="playerUpNextTimer" role="timer" aria-live="off">dans {upNextCountdownDisplay} s</div>
           <strong className="playerUpNextTitle">{upNext!.title}</strong>
         </div>
         <div className="playerUpNextActions">
-          <button className="primaryButton" type="button" onClick={onUpNext}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
-          <button className="secondaryButton" type="button" onClick={() => setUpNextCancelled(true)}>Annuler</button>
+          <button className="primaryButton" type="button" onClick={playUpNext}><Play size={15} fill="currentColor" aria-hidden="true" />Lire</button>
+          <button className="secondaryButton" type="button" onClick={cancelUpNext}>Annuler</button>
         </div>
       </div>
     ) : null}
