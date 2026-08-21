@@ -62,6 +62,7 @@ export function MediaPlayer({
   const lastProgressRef = useRef(0);
   const resumeAppliedRef = useRef(false);
   const upNextCancelledRef = useRef(false);
+  const [upNextCancelled, setUpNextCancelled] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -100,6 +101,7 @@ setError(null);
     setIsLive(false);
     setEnded(false);
     upNextCancelledRef.current = false;
+    setUpNextCancelled(false);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -206,6 +208,7 @@ setError(null);
     if (!video) return;
     setEnded(false);
     upNextCancelledRef.current = true;
+    setUpNextCancelled(true);
     video.currentTime = Math.max(0, (Number.isFinite(video.duration) ? video.duration : duration) - 15);
     void video.play().catch(() => {});
   }
@@ -313,7 +316,7 @@ setError(null);
       case "End":
         event.preventDefault(); { const v = videoRef.current; if (v) { v.currentTime = v.duration; } } break;
       case "Escape":
-        if (upNext && onUpNext && !upNextCancelledRef.current) { event.preventDefault(); upNextCancelledRef.current = true; } break;
+        if (upNext && onUpNext && !upNextCancelled) { event.preventDefault(); setUpNextCancelled(true); } break;
       default:
         break;
     }
@@ -375,7 +378,7 @@ setError(null);
       setShowControls(true);
       setEnded(true);
       trackProgress(true);
-      if (upNext && onUpNext && !upNextCancelledRef.current) onUpNext();
+      if (upNext && onUpNext && !upNextCancelled) onUpNext();
     };
     const onEnterPip = () => setIsPip(true);
     const onLeavePip = () => setIsPip(false);
@@ -454,7 +457,7 @@ setError(null);
   const remainingSeconds = duration > 0 ? duration - currentTime : Infinity;
   const upNextLead = Math.min(30, duration || 0);
   const showUpNext = Boolean(
-    controls && !ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelledRef.current
+    controls && !ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled
     && remainingSeconds > 0.5 && remainingSeconds <= upNextLead
   );
   const upNextCountdownDisplay = Math.max(1, Math.ceil(remainingSeconds));
@@ -512,7 +515,7 @@ setError(null);
       {controls && ended && ready ? (
       <div className="playerEnded" role="dialog" aria-label="Fin de lecture">
         <div className="playerEndedCard">
-          {upNext && !upNextCancelledRef.current ? (
+          {upNext && !upNextCancelled ? (
             <>
               <span className="playerEndedLabel"><Play size={14} fill="currentColor" aria-hidden="true" />À suivre</span>
               <strong className="playerEndedTitle">{upNext.title}</strong>
@@ -548,7 +551,7 @@ setError(null);
         </div>
         <div className="playerUpNextActions">
           <button className="primaryButton" type="button" onClick={onUpNext}><Play size={16} fill="currentColor" aria-hidden="true" />Lire maintenant</button>
-          <button className="secondaryButton" type="button" onClick={() => { upNextCancelledRef.current = true; }}>Annuler</button>
+          <button className="secondaryButton" type="button" onClick={() => setUpNextCancelled(true)}>Annuler</button>
         </div>
       </div>
     ) : null}
