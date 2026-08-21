@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Home, PanelsTopLeft, Search, Zap } from "lucide-react";
+import { Film, Home, LibraryBig, PanelsTopLeft, Radio, Search, Zap } from "lucide-react";
 import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
 import pkg from "@/package.json";
@@ -11,9 +11,9 @@ import pkg from "@/package.json";
 const primaryNav = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/search", label: "Recherche", icon: Search },
-  { href: "/#latest", label: "Vidéos", icon: Compass },
-  { href: "/#series", label: "Séries", icon: Compass },
-  { href: "/#live", label: "Live", icon: Compass },
+  { href: "/videos", label: "Vidéos", icon: Film },
+  { href: "/series", label: "Séries", icon: LibraryBig },
+  { href: "/live", label: "Direct", icon: Radio },
   { href: "/flashy", label: "Flashy", icon: Zap }
 ];
 
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <footer className="ninoFooter" aria-label="Pied de page Nino">
         <div className="ninoFooterBrand"><Image src="/logo_nino_small.png" alt="" width={34} height={34} /><span><strong>Nino</strong><small>Version {pkg.version}</small></span></div>
-        <nav aria-label="Liens rapides"><Link href="/">Accueil</Link><Link href="/search">Recherche</Link><Link href="/#latest">Vidéos</Link><Link href="/#series">Séries</Link><Link href="/#live">Live</Link><Link href="/flashy">Flashy</Link></nav>
+        <nav aria-label="Liens rapides"><Link href="/">Accueil</Link><Link href="/search">Recherche</Link><Link href="/videos">Vidéos</Link><Link href="/series">Séries</Link><Link href="/live">Direct</Link><Link href="/flashy">Flashy</Link></nav>
         <small>Vos programmes. Votre univers.</small>
       </footer>
 

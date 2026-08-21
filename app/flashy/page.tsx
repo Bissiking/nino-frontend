@@ -297,7 +297,6 @@ const FlashyItem = forwardRef<HTMLElement, FlashyItemProps>(function FlashyItem(
         <div className="flashyCopy">
           <span className="flashyGenres">{item.genres.join(" · ")}</span>
           <h2>{item.title}</h2>
-          <p>{item.synopsis}</p>
         </div>
         <FlashyRail item={item} profileId={profileId} open={infoOpen} onToggleInfo={onToggleInfo} />
         <FlashyInfo item={item} profileId={profileId} open={infoOpen} onClose={onCloseInfo} onOpenItem={onOpenItem} />

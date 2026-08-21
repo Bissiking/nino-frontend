@@ -247,10 +247,12 @@ export const api = {
     return request<Profile>(`/api/v1/profiles/${encodeURIComponent(profileId)}/avatar`, { method: "POST", body: form });
   },
   home: (profileId?: string | null) => request<HomePayload>(`/api/v1/home${profileId ? `?profile_id=${profileId}` : ""}`),
-  media: (kind?: string, profileId?: string | null) => {
+  media: (kind?: string, profileId?: string | null, pageSize = 24, page = 1) => {
     const params = new URLSearchParams();
     if (kind) params.set("kind", kind);
     if (profileId) params.set("profile_id", profileId);
+    params.set("page_size", String(pageSize));
+    params.set("page", String(page));
     return request<MediaItem[]>(`/api/v1/media?${params.toString()}`);
   },
   mediaDetail: (id: string, profileId?: string | null) =>
