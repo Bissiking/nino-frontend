@@ -333,7 +333,7 @@ function SeriesWorkspace({ series, onOpen, onCreate }: { series: MediaItem[]; on
             <li key={item.id} className={item.id === selectedId ? "isActive" : undefined}>
               <button type="button" onClick={() => open(item.id)} aria-current={item.id === selectedId ? "true" : undefined}>
                 <span className="studioSeriesListPoster">{api.assetUrl(item.poster_url) ? <span style={{ backgroundImage: `url(${JSON.stringify(api.assetUrl(item.poster_url))})` }} /> : <Film size={18} aria-hidden="true" />}</span>
-                <span><strong>{item.title}</strong><small>{item.no_spoil ? "No Spoil activé · " : ""}{VISIBILITY_LABELS[item.visibility] ?? item.visibility}</small></span>
+                <span><strong>{item.title}</strong><small>{item.no_spoil ? "Prochains épisodes masqués · " : ""}{VISIBILITY_LABELS[item.visibility] ?? item.visibility}</small></span>
               </button>
               <Link href={`/studio/media/${encodeURIComponent(item.id)}`} aria-label={`Modifier ${item.title}`}><span className="srOnly">Modifier</span><ChevronRight size={16} /></Link>
             </li>

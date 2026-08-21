@@ -157,9 +157,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .secondaryButton { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); color: var(--ink); }
 .secondaryButton:hover { background: rgba(255, 255, 255, 0.17); transform: translateY(-2px); }
 .wide { max-width: none; width: 100%; }
-.heroKind, .liveBadge { background: rgba(15, 15, 15, 0.86); border-radius: 6px; color: var(--ink); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; padding: 7px 10px; text-transform: uppercase; }
-.heroKind { bottom: 40px; position: absolute; right: 42px; z-index: 3; }
-.heroKind.isLive, .liveBadge { background: var(--accent-strong); color: white; }
+.liveBadge { background: var(--accent-strong); border-radius: 6px; color: white; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; padding: 7px 10px; text-transform: uppercase; }
 .emptyHero { align-items: center; display: flex; }
 
 .homeCatalog { display: grid; gap: 44px; padding: 8px clamp(20px, 4vw, 60px) 72px; position: relative; z-index: 4; }
@@ -635,6 +633,29 @@ body.isCinematic { overflow: hidden; }
 }
 .playerBigPlay button:hover { opacity: 1; transform: scale(1.05); }
 .playerBigPlay button:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+
+.playerSkipIntro {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-sm);
+  bottom: 82px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  gap: 10px;
+  left: 20px;
+  min-height: 44px;
+  padding: 0 15px;
+  position: absolute;
+  transition: background var(--dur-1), border-color var(--dur-1), transform var(--dur-1);
+  z-index: 6;
+}
+.playerSkipIntro:hover { background: var(--surface-raised); border-color: var(--ink); transform: translateY(-2px); }
+.playerSkipIntro:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
 
 .playerControls {
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.35) 60%, transparent);
@@ -1363,7 +1384,6 @@ body.isCinematic { overflow: hidden; }
   .heroContent { justify-content: flex-end; padding: 32px 20px 48px; width: 100%; }
   .heroContent h1 { font-size: clamp(2.25rem, 11vw, 3.5rem); }
   .heroContent p { display: -webkit-box; font-size: 1rem; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .heroKind { display: none; }
   .heroActions { width: 100%; }
   .heroActions .primaryButton, .heroActions .secondaryButton { flex: 1; padding: 0 12px; }
   .homeCatalog { gap: 38px; padding: 6px 16px 38px; }
@@ -1808,6 +1828,11 @@ body.isCinematic { overflow: hidden; }
 .seriesBackdrop p { color: rgba(255, 255, 255, 0.78); font-size: var(--text-md); margin: 0; max-width: 52ch; }
 .seriesSurface .ninoMarkdown { margin-bottom: 14px; }
 .noSpoilNote { color: rgba(255, 255, 255, 0.6); font-size: var(--text-sm); margin-top: 12px; }
+.mediaNoSpoilHelp { align-items: start; background: var(--surface); border-radius: var(--radius-sm); color: var(--muted); display: flex; gap: 11px; padding: 13px 14px; }
+.mediaNoSpoilHelp > svg { color: var(--accent); flex: 0 0 auto; margin-top: 1px; }
+.mediaNoSpoilHelp > span { display: grid; gap: 3px; }
+.mediaNoSpoilHelp strong { color: var(--ink); font-size: var(--text-sm); }
+.mediaNoSpoilHelp small { line-height: 1.45; }
 .seriesSeasons { display: grid; gap: 22px; margin-top: 8px; }
 .seriesSeason h2 { font-family: var(--font-title); font-size: var(--text-lg); margin: 0 0 10px; }
 .episodeGrid { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }

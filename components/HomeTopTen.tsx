@@ -2,12 +2,12 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
 
-export function HomeTopTen({ items }: { items: MediaItem[] }) {
+export function HomeTopTen({ items, title }: { items: MediaItem[]; title?: string }) {
   if (!items.length) return null;
 
   return (
     <section className="topTen" id="top10" aria-labelledby="top-ten-title">
-      <div className="railHeader"><h2 id="top-ten-title">Top 10 cette semaine</h2><span>Les mieux notés sur Nino</span></div>
+      <div className="railHeader"><h2 id="top-ten-title">{title ?? `Top ${items.length} cette semaine`}</h2><span>Les tendances sur Nino</span></div>
       <ol className="topTenList">
         {items.map((item, index) => (
           <li key={item.id}>

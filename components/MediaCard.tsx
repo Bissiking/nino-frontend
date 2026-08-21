@@ -12,7 +12,7 @@ function remainingLabel(item: MediaItem): string | null {
 }
 
 export function MediaCard({ item, priority = false, portrait = false, resume = false }: { item: MediaItem; priority?: boolean; portrait?: boolean; resume?: boolean }) {
-  const posterUrl = api.assetUrl(item.poster_url);
+  const posterUrl = api.assetUrl(portrait ? (item.thumbnail_vertical_url ?? item.poster_url) : item.poster_url);
   const remaining = resume ? remainingLabel(item) : null;
   const href = item.kind === "short" ? "/flashy" : `/watch/${item.id}`;
   return (

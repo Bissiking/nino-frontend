@@ -24,7 +24,6 @@ export function HeroConsole({ item }: { item: MediaItem | null }) {
           <Link className="secondaryButton" href={`/watch/${item.id}`}><Info size={20} aria-hidden="true" />Plus d'infos</Link>
         </div>
       </div>
-      <span className={`heroKind ${item.kind === "live" ? "isLive" : ""}`}>{item.kind === "live" ? "En direct" : item.kind}</span>
     </section>
   );
 }

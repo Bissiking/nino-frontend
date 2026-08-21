@@ -27,6 +27,8 @@ type Props = {
   mediaId?: string;
   profileId?: string | null;
   resumePercent?: number;
+  introStartSeconds?: number;
+  introEndSeconds?: number;
   upNext?: PlayerUpNext | null;
   onUpNext?: () => void;
   onProgress?: (positionSeconds: number, durationSeconds: number) => void;
@@ -49,7 +51,8 @@ function formatTime(seconds: number): string {
 
 export function MediaPlayer({
   decision, poster, controls = true, autoPlay = false, muted = false, loop = false, tapToToggle = false, className,
-  mediaId, profileId, resumePercent = 0, upNext = null, onUpNext, onProgress, onMutedChange = () => {}
+  mediaId, profileId, resumePercent = 0, introStartSeconds = 0, introEndSeconds = 0,
+  upNext = null, onUpNext, onProgress, onMutedChange = () => {}
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -202,6 +205,16 @@ export function MediaPlayer({
     const video = videoRef.current;
     if (!video || isLiveState()) return;
     video.currentTime = Math.max(0, Math.min((Number.isFinite(video.duration) ? video.duration : 0), video.currentTime + delta));
+  }
+
+  function skipIntro() {
+    const video = videoRef.current;
+    if (!video || !Number.isFinite(video.duration)) return;
+    const target = Math.min(video.duration, introEndSeconds);
+    if (target <= video.currentTime) return;
+    video.currentTime = target;
+    setCurrentTime(target);
+    pokeControls();
   }
 
   function setPlaybackRate(rate: number) {
@@ -406,6 +419,13 @@ export function MediaPlayer({
   const VolumeIcon = mutedState || volume === 0 ? VolumeX : volume < 0.55 ? Volume1 : Volume2;
   const isSeekable = !live && duration > 0 && Number.isFinite(duration);
   const progressPercent = isSeekable ? (currentTime / duration) * 100 : 0;
+  const introEnd = Math.min(duration, introEndSeconds);
+  const canSkipIntro = controls
+    && isSeekable
+    && introStartSeconds >= 0
+    && introEnd > introStartSeconds
+    && currentTime >= introStartSeconds
+    && currentTime < introEnd;
 
   return (
     <div
@@ -480,6 +500,12 @@ export function MediaPlayer({
         <div className="playerBigPlay" role="presentation">
           <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Lecture"}><Play size={26} fill="currentColor" aria-hidden="true" /></button>
         </div>
+      ) : null}
+
+      {canSkipIntro ? (
+        <button className="playerSkipIntro" type="button" onClick={skipIntro} onFocus={pokeControls}>
+          Passer l’intro <SkipForward size={18} aria-hidden="true" />
+        </button>
       ) : null}
 
       {controls ? (

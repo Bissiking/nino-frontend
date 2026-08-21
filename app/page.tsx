@@ -25,7 +25,8 @@ export default function HomePage() {
 
   useEffect(load, [profileId]);
 
-  const topTen = home?.rails.find((rail) => rail.id === "top10")?.items ?? [];
+  const topRail = home?.rails.find((rail) => rail.id === "top10");
+  const topTen = topRail?.items ?? [];
   const visibleRails = home?.rails.filter((rail) => rail.id !== "top10" && (rail.items.length > 0 || rail.id === "latest")) ?? [];
 
   return (
@@ -36,7 +37,7 @@ export default function HomePage() {
         <div className="homeStack">
           <HeroConsole item={home.hero} />
           <div className="homeCatalog">
-            <HomeTopTen items={topTen} />
+            <HomeTopTen items={topTen} title={topRail?.title} />
             <CategoryStrip rails={home.rails} />
             {visibleRails.map((rail) => <Rail rail={rail} key={rail.id} />)}
           </div>

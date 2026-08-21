@@ -47,6 +47,8 @@ export type MediaItem = {
   tags: string[];
   year: number | null;
   duration_seconds: number;
+  intro_start_seconds: number;
+  intro_end_seconds: number;
   genres: string[];
   poster_url: string | null;
   backdrop_url: string | null;
@@ -134,6 +136,8 @@ export type MediaWritePayload = {
   tags: string[];
   year: number | null;
   duration_seconds: number;
+  intro_start_seconds: number;
+  intro_end_seconds: number;
   genres: string[];
   poster_url: string | null;
   backdrop_url: string | null;
