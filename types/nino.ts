@@ -160,6 +160,7 @@ export type SeriesEpisodeEntry = {
   title: string;
   episode_number: number;
   duration_seconds: number;
+  progress_percent: number;
   is_released: boolean;
   publish_at: string | null;
 };

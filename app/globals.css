@@ -202,17 +202,22 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .railArrowNext { right: 8px; }
 .portraitScroller { grid-auto-columns: minmax(170px, 12vw); }
 .resultGrid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-.mediaCard { display: grid; gap: 8px; min-width: 0; scroll-snap-align: start; }
+.mediaCard { display: grid; min-width: 0; position: relative; scroll-snap-align: start; }
+.mediaCardLink { display: grid; gap: 8px; min-width: 0; }
 .posterFrame { aspect-ratio: 16 / 9; background: var(--surface); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius-md); overflow: hidden; position: relative; transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2), border-color var(--dur-2); }
 .portraitCard .posterFrame { aspect-ratio: 9 / 16; }
 .focusTile:hover .posterFrame, .focusTile:focus-visible .posterFrame { border-color: rgba(233, 75, 60, 0.34); box-shadow: var(--shadow-soft); transform: translateY(-5px) scale(1.035); }
 .posterFallback { align-items: center; color: var(--accent); display: flex; font-size: 4rem; font-weight: 900; height: 100%; justify-content: center; }
 .playChip { align-items: center; background: var(--ink); border-radius: 50%; bottom: 12px; color: var(--bg); display: inline-flex; height: 38px; justify-content: center; opacity: 0; position: absolute; right: 12px; transform: translateY(7px); transition: opacity var(--dur-1), transform var(--dur-1); width: 38px; }
-.mediaCard:hover .playChip, .mediaCard:focus-visible .playChip { opacity: 1; transform: translateY(0); }
+.mediaCard:hover .playChip, .mediaCardLink:focus-visible .playChip { opacity: 1; transform: translateY(0); }
 .liveBadge { left: 10px; position: absolute; top: 10px; }
 .resumeBadge { background: rgba(15, 15, 15, 0.88); border-radius: 6px; bottom: 10px; color: var(--ink); font-size: 0.72rem; font-weight: 800; left: 10px; letter-spacing: 0.05em; padding: 6px 9px; position: absolute; text-transform: uppercase; backdrop-filter: blur(6px); }
 .mediaTitle { font-size: 0.94rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mediaMeta { color: var(--muted); font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mediaMeta { align-items: center; color: var(--muted); display: inline-flex; font-size: var(--text-xs); gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.markSeenButton { align-items: center; background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: var(--radius-sm); color: var(--ink); display: inline-flex; font-size: var(--text-xs); font-weight: 800; gap: 6px; min-height: 36px; padding: 0 10px; position: absolute; right: 10px; top: 10px; z-index: 3; }
+.markSeenButton:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--ink); }
+.markSeenButton.isSeen { background: var(--accent); border-color: transparent; color: #fff; opacity: 1; }
+.markSeenButton:disabled:not(.isSeen) { opacity: 0.55; }
 .progressTrack { background: rgba(255, 255, 255, 0.18); bottom: 0; display: block; height: 4px; left: 0; overflow: hidden; position: absolute; right: 0; }
 .progressTrack span { background: var(--accent); display: block; height: 100%; }
 
@@ -630,6 +635,8 @@ body.isCinematic { overflow: hidden; }
 }
 .playerEndedLabel { align-items: center; color: var(--accent); display: inline-flex; font-size: var(--text-xs); font-weight: 800; gap: 7px; letter-spacing: 0.08em; text-transform: uppercase; }
 .playerEndedTitle { color: var(--ink); font-family: var(--font-title); font-size: var(--text-lg); line-height: 1.25; margin: 0; }
+.playerEndedCountdown { color: var(--muted); margin: -4px 0 0; }
+.playerEndedCountdown strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 .playerEndedThumb { border-radius: var(--radius-sm); max-height: 150px; object-fit: cover; width: 100%; }
 .playerEndedActions { display: flex; flex-wrap: wrap; gap: 10px; }
 .playerEndedActions .primaryButton, .playerEndedActions .secondaryButton { min-height: 44px; padding: 0 16px; }
@@ -1719,6 +1726,12 @@ body.isCinematic { overflow: hidden; }
 .watchRecommend, .watchSeriesContext { margin-top: 6px; }
 .watchRecommendGrid { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); gap: 16px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); padding: 18px; }
 .watchSeriesContext .seriesSeasons { display: grid; gap: 26px; margin-top: 2px; }
+.watchDescription { border-block: 1px solid var(--line); padding: 2px 0; }
+.watchDescription > summary { align-items: center; color: var(--ink); cursor: pointer; display: flex; font-weight: 800; justify-content: space-between; list-style: none; min-height: 48px; }
+.watchDescription > summary::-webkit-details-marker { display: none; }
+.watchDescription > summary svg { color: var(--muted); transition: transform var(--dur-1); }
+.watchDescription[open] > summary svg { transform: rotate(180deg); }
+.watchDescription .ninoMarkdown { margin: 0; padding: 4px 0 16px; }
 .episodeRow.isCurrent { background: rgba(233, 75, 60, 0.12); border-color: rgba(233, 75, 60, 0.55); }
 .episodeRow.isCurrent .episodeNumber { color: var(--accent); }
 .episodeRow.isNext { border-color: rgba(241, 124, 88, 0.45); }
@@ -1861,7 +1874,13 @@ body.isCinematic { overflow: hidden; }
 .mediaNoSpoilHelp strong { color: var(--ink); font-size: var(--text-sm); }
 .mediaNoSpoilHelp small { line-height: 1.45; }
 .seriesSeasons { display: grid; gap: 22px; margin-top: 8px; }
-.seriesSeason h2 { font-family: var(--font-title); font-size: var(--text-lg); margin: 0 0 10px; }
+.seriesSeason { min-width: 0; }
+.seriesSeason > summary { align-items: center; cursor: pointer; display: flex; font-family: var(--font-title); font-size: var(--text-lg); font-weight: 800; justify-content: space-between; list-style: none; min-height: 52px; }
+.seriesSeason > summary::-webkit-details-marker { display: none; }
+.seriesSeason > summary > span { align-items: center; color: var(--muted); display: inline-flex; font-family: Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: var(--text-xs); font-weight: 500; gap: 8px; }
+.seriesSeason > summary svg { transition: transform var(--dur-1); }
+.seriesSeason[open] > summary svg { transform: rotate(180deg); }
+.seriesSeason > .episodeGrid { padding-top: 4px; }
 .episodeGrid { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .episodeRow { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); display: flex; gap: 14px; min-height: 52px; padding: 10px 14px; text-decoration: none; transition: border-color 0.15s ease, background 0.15s ease; }
 a.episodeRow:hover, a.episodeRow:focus-visible { background: rgba(255, 255, 255, 0.05); border-color: var(--accent); }
@@ -1871,6 +1890,7 @@ a.episodeRow:hover, a.episodeRow:focus-visible { background: rgba(255, 255, 255,
 .isLockedRow .episodeNumber { color: var(--muted); }
 .episodeText { display: flex; flex-direction: column; flex: 1; gap: 2px; min-width: 0; }
 .episodeText strong { font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.episodeText small { align-items: center; color: var(--muted); display: inline-flex; font-size: 0.72rem; gap: 5px; }
 .episodeAdult { background: rgba(255, 70, 60, 0.14); border-radius: 999px; color: #ffb0a8; display: inline-flex; font-size: var(--text-xs); gap: 4px; padding: 3px 10px; }
 .episodeRelease { align-items: center; color: var(--muted); display: inline-flex; flex: none; font-size: var(--text-xs); gap: 6px; }
 .seriesSeasonEmpty { color: var(--muted); font-size: var(--text-sm); }
