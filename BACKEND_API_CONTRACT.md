@@ -714,6 +714,7 @@ Endpoints administration du transcodage :
 - `DELETE /api/v1/admin/transcode/config` supprime la surcharge runtime et retombe sur l'env ;
 - `GET /api/v1/admin/transcode/jobs` liste les 100 derniers jobs ;
 - `GET /api/v1/admin/transcode/status` expose l'état du worker (heartbeat, job running, compteurs) avec la config effective.
+- `POST /api/v1/admin/transcode/jobs/{job_id}/force` force un job non terminé à repasser en attente avec priorité immédiate, y compris hors fenêtre horaire. Un job réellement actif est refusé pour éviter un double encodage.
 
 ## Routes techniques
 

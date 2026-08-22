@@ -49,7 +49,8 @@ export default function StudioTranscodePage() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [live, setLive] = useState<"connecting" | "connected" | "offline">("connecting");
   const [acting, setActing] = useState<"start" | "stop" | null>(null);
-  const [retrying, setRetrying] = useState<string | null>(null);
+  const [forcing, setForcing] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const abortRef = useRef<(() => void) | null>(null);
 
   const loadWorker = useCallback(async () => {
@@ -103,16 +104,64 @@ export default function StudioTranscodePage() {
     }
   }, []);
 
-  const retryJob = useCallback(async (jobId: string) => {
-    setRetrying(jobId);
+  const forceJob = useCallback(async (jobId: string) => {
+    setForcing(jobId);
+    setActionNotice(null);
+    setError(null);
     try {
-      await api.adminTranscodeRetry(jobId);
+      await api.adminTranscodeForce(jobId);
+      setSnapshot((current) => {
+        if (!current) return current;
+        const previous = current.jobs.find((job) => job.id === jobId);
+        const counts = previous && previous.status !== "pending" ? {
+          ...current.counts,
+          [previous.status]: Math.max(0, current.counts[previous.status] - 1),
+          pending: current.counts.pending + 1
+        } : current.counts;
+        return {
+          ...current,
+          counts,
+          running: current.running?.id === jobId ? null : current.running,
+          jobs: current.jobs.map((job) => job.id === jobId ? {
+            ...job,
+            status: "pending",
+            attempts: 0,
+            error: null,
+            progress: 0,
+            stage: null,
+            stale: false,
+            worker: null,
+            started_at: null,
+            finished_at: null,
+            last_heartbeat: null
+          } : job)
+        };
+      });
+
+      if (snapshot?.worker_enabled === false) {
+        setActionNotice("Job rendu prioritaire, mais le worker est désactivé dans la configuration.");
+        return;
+      }
+      const workerIsRunning = worker?.mode === "systemd"
+        ? worker.systemd_active === true
+        : worker?.managed_alive === true;
+      if (!workerIsRunning) {
+        try {
+          setWorker(await api.adminTranscodeWorkerStart());
+          setActionNotice("Transcodage prioritaire demandé et worker démarré.");
+        } catch (startReason) {
+          setActionNotice("Job rendu prioritaire, mais le worker n’a pas pu démarrer automatiquement.");
+          setError(startReason instanceof Error ? startReason.message : "Impossible de démarrer le worker.");
+        }
+      } else {
+        setActionNotice("Transcodage prioritaire demandé. Il démarrera dès que le worker sera libre.");
+      }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Impossible de relancer le job.");
+      setError(reason instanceof Error ? reason.message : "Impossible de forcer le transcodage.");
     } finally {
-      setRetrying(null);
+      setForcing(null);
     }
-  }, []);
+  }, [snapshot?.worker_enabled, worker]);
 
   const counts = snapshot?.counts ?? { pending: 0, running: 0, failed: 0, done: 0 };
   const systemMode = worker?.mode === "systemd";
@@ -309,10 +358,16 @@ export default function StudioTranscodePage() {
               <div className="studioPanelHeading">
                 <div>
                   <h2>File de jobs</h2>
-                  <p>Les 100 derniers jobs, mis à jour en direct.</p>
+                  <p>Lancez un job en priorité, même hors de la fenêtre horaire.</p>
                 </div>
                 <HardDrive size={20} aria-hidden="true" />
               </div>
+              {actionNotice ? (
+                <div className="transcodeActionNotice" role="status">
+                  <CircleDot size={16} aria-hidden="true" />
+                  <span>{actionNotice}</span>
+                </div>
+              ) : null}
               {!snapshot?.jobs.length ? (
                 <div className="studioCompactEmpty">
                   <CircleDot size={18} aria-hidden="true" />
@@ -333,38 +388,41 @@ export default function StudioTranscodePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {snapshot?.jobs.map((job) => (
-                        <tr key={job.id} className={job.status === "running" ? "isSelected" : ""}>
-                          <td>
-                            <strong>{mediaTitles[job.media_id] ?? job.media_id}</strong>
-                            <small>{job.id}</small>
-                          </td>
-                          <td>
-                            <span className={`transcodeStatus is${job.status[0].toUpperCase()}${job.status.slice(1)}`}>
-                              {STATUS_LABELS[job.status]}
-                            </span>
-                            {job.stale ? <small className="transcodeStale">stale</small> : null}
-                          </td>
-                          <td>{job.progress != null ? `${job.progress} %` : "—"}</td>
-                          <td>{job.stage ?? "—"}</td>
-                          <td>{job.worker ?? "—"}</td>
-                          <td>{formatTime(job.started_at ?? job.created_at)}</td>
-                          <td>
-                            {job.status === "failed" ? (
-                              <button
-                                className="studioRowAction"
-                                type="button"
-                                title="Relancer le job"
-                                aria-label="Relancer le job"
-                                disabled={retrying === job.id}
-                                onClick={() => void retryJob(job.id)}
-                              >
-                                {retrying === job.id ? <Loader2 size={16} className="spin" aria-hidden="true" /> : <RotateCw size={16} aria-hidden="true" />}
-                              </button>
-                            ) : null}
-                          </td>
-                        </tr>
-                      ))}
+                      {snapshot?.jobs.map((job) => {
+                        const canForce = job.status === "pending" || job.status === "failed" || (job.status === "running" && job.stale);
+                        return (
+                          <tr key={job.id} className={job.status === "running" ? "isSelected" : ""}>
+                            <td>
+                              <strong>{mediaTitles[job.media_id] ?? job.media_id}</strong>
+                              <small>{job.id}</small>
+                            </td>
+                            <td>
+                              <span className={`transcodeStatus is${job.status[0].toUpperCase()}${job.status.slice(1)}`}>
+                                {STATUS_LABELS[job.status]}
+                              </span>
+                              {job.stale ? <small className="transcodeStale">stale</small> : null}
+                            </td>
+                            <td>{job.progress != null ? `${job.progress} %` : "—"}</td>
+                            <td>{job.stage ?? "—"}</td>
+                            <td>{job.worker ?? "—"}</td>
+                            <td>{formatTime(job.started_at ?? job.created_at)}</td>
+                            <td>
+                              {canForce ? (
+                                <button
+                                  className="transcodeForceButton"
+                                  type="button"
+                                  title="Lancer en priorité, même hors de la fenêtre horaire"
+                                  disabled={forcing !== null}
+                                  onClick={() => void forceJob(job.id)}
+                                >
+                                  {forcing === job.id ? <Loader2 size={16} className="spin" aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+                                  {forcing === job.id ? "Lancement…" : "Lancer maintenant"}
+                                </button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

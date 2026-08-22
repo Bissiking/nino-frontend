@@ -326,6 +326,8 @@ export const api = {
   adminTranscodeWorkerStop: () => request<TranscodeWorkerControl>("/api/v1/admin/transcode/worker/stop", { method: "POST" }),
   adminTranscodeRetry: (jobId: string) =>
     request<TranscodeJob>(`/api/v1/admin/transcode/jobs/${encodeURIComponent(jobId)}/retry`, { method: "POST" }),
+  adminTranscodeForce: (jobId: string) =>
+    request<{ id: string; status: "pending"; forced: true }>(`/api/v1/admin/transcode/jobs/${encodeURIComponent(jobId)}/force`, { method: "POST" }),
   adminTranscodeLive: (onSnapshot: (data: TranscodeSnapshot) => void, onError?: () => void): (() => void) => {
     const token = getAccessToken();
     if (!token) {
