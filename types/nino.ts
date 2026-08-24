@@ -280,6 +280,21 @@ export type TranscodeWorkerControl = {
   managed_alive: boolean;
 };
 
+export type TranscodeConfig = {
+  window_start: string;
+  window_end: string;
+  worker_enabled: boolean;
+  max_concurrency: number;
+  poll_seconds: number;
+  max_attempts: number;
+  worker_nice: number;
+  worker_cpuset: string;
+  enable_1080p: boolean;
+  enable_720p: boolean;
+  enable_480p: boolean;
+  source: "runtime" | "config";
+};
+
 export type TranscodeSnapshot = {
   worker_enabled: boolean;
   worker: {

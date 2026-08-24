@@ -1,0 +1,290 @@
+Tu travailles sur **Nino Studio**, l’interface d’administration et de création de la plateforme vidéo Nino.
+
+L’objectif est de créer ou refondre n’importe quelle page de Nino Studio tout en conservant **strictement le même design system** sur l’ensemble de l’application.
+
+## Référence visuelle
+
+Le design de référence est celui de la nouvelle interface Nino Studio :
+
+* thème sombre premium
+* sidebar verticale fixe à gauche
+* header horizontal fixe ou sticky
+* logo **Nino** orange + mention **Studio**
+* recherche globale dans le header
+* bouton principal orange dans le header
+* avatar et notifications à droite
+* grandes zones de contenu aérées
+* cartes sombres légèrement plus claires que le fond
+* bordures fines et discrètes
+* coins arrondis cohérents
+* ombres très légères
+* accent principal orange Nino
+* vert pour les états positifs/publiés
+* violet pour certains états secondaires
+* rouge uniquement pour les actions destructives
+* typographie sans-serif moderne et très lisible
+
+Le résultat doit ressembler à un **outil professionnel de création vidéo**, entre un creator studio, un CMS moderne et une application SaaS haut de gamme.
+
+## Structure globale obligatoire
+
+Toutes les pages Studio doivent reprendre exactement la même structure principale :
+
+### Header
+
+À gauche :
+
+**Nino Studio**
+
+Au centre :
+
+recherche globale avec raccourci `⌘ K`
+
+À droite :
+
+* bouton d’action principal contextuel
+* notifications
+* avatar utilisateur
+* nom utilisateur
+* rôle
+
+Le header doit rester sobre et compact.
+
+### Navigation latérale
+
+Sidebar fixe avec :
+
+* Tableau
+* Vidéos
+* Séries
+* Flashy
+* Planning
+* Direct
+* Système
+
+L’élément actif utilise :
+
+* fond légèrement éclairci
+* barre verticale orange
+* icône orange
+* texte blanc
+
+En bas :
+
+bloc de stockage avec :
+
+* espace utilisé
+* capacité totale
+* barre de progression
+* bouton de gestion
+
+## Règles visuelles
+
+Utiliser les mêmes :
+
+* espacements
+* tailles de boutons
+* hauteurs de champs
+* rayons de bordure
+* ombres
+* couleurs
+* icônes
+* badges
+* cartes
+* tabs
+* dropdowns
+* toolbars
+* tableaux
+* panneaux latéraux
+
+sur toutes les pages.
+
+Ne jamais recréer un nouveau style pour une page particulière.
+
+Une page doit immédiatement être reconnaissable comme appartenant à **Nino Studio**.
+
+## Palette fonctionnelle
+
+Orange Nino :
+
+action principale, navigation active, sélection, accent.
+
+Vert :
+
+publié, enregistré, valide, disponible.
+
+Violet :
+
+privé, contenu secondaire ou état intermédiaire.
+
+Jaune/orange secondaire :
+
+programmé, en attente.
+
+Rouge :
+
+suppression, erreur ou danger uniquement.
+
+Les couleurs fonctionnelles doivent rester relativement discrètes.
+
+## Formulaires
+
+Les formulaires doivent être organisés par sections ou onglets.
+
+Éviter les très longues pages verticales contenant tous les paramètres les uns sous les autres.
+
+Préférer :
+
+* tabs
+* groupes logiques
+* panneaux
+* sections repliables si nécessaire
+
+Les champs doivent utiliser une grille responsive propre.
+
+## Éditeur de contenu
+
+Pour les écrans d’édition, utiliser une structure :
+
+### Colonne gauche
+
+Aperçu du média ou visuel principal.
+
+Sous l’aperçu :
+
+informations techniques ou résumé rapide.
+
+Cette colonne peut rester sticky pendant le scroll.
+
+### Zone principale
+
+Grand panneau contenant les différents groupes de paramètres.
+
+Navigation par tabs en haut du panneau.
+
+Exemples :
+
+* Contenu
+* Métadonnées
+* Publication
+* Visuels
+* Série
+* Contenu sensible
+
+Adapter ces tabs selon le type de contenu.
+
+## Barre d’actions
+
+Sur une page d’édition, afficher en haut à droite :
+
+* action de lecture/aperçu si pertinente
+* actualisation si nécessaire
+* suppression
+* bouton principal **Enregistrer**
+
+Le bouton Enregistrer doit être orange et visuellement dominant.
+
+Afficher clairement l’état :
+
+* Enregistré
+* Modifications non enregistrées
+* Publication en cours
+* Erreur de sauvegarde
+
+## Densité
+
+L’interface doit être informative mais jamais étouffante.
+
+Réduire le nombre de gros blocs inutiles.
+
+Favoriser une forte hiérarchie visuelle.
+
+Les informations importantes doivent être visibles immédiatement.
+
+Les informations secondaires peuvent être placées dans :
+
+* tooltips
+* panneaux secondaires
+* accordéons
+* inspecteurs
+* badges
+
+## Composants
+
+Créer des composants réutilisables.
+
+Exemples :
+
+`StudioHeader`
+
+`StudioSidebar`
+
+`PageHeader`
+
+`PrimaryAction`
+
+`StatusBadge`
+
+`MetricCard`
+
+`ContentCard`
+
+`MediaPreview`
+
+`EditorTabs`
+
+`EditorSection`
+
+`MetadataField`
+
+`TagInput`
+
+`VisibilitySelector`
+
+`DateTimePicker`
+
+`ImageUploader`
+
+`DangerZone`
+
+`StorageWidget`
+
+Ne pas dupliquer le CSS ou recréer le même composant avec des styles différents selon la page.
+
+## Responsive
+
+Desktop prioritaire.
+
+L’interface doit rester exploitable entre environ 1280 px et 2560 px.
+
+À largeur réduite :
+
+* sidebar éventuellement compacte
+* colonnes pouvant se repositionner
+* panneau d’inspection pouvant devenir drawer
+
+Ne jamais casser la hiérarchie principale.
+
+## Langue
+
+Toute l’interface utilisateur est en français.
+
+Les libellés doivent être naturels, courts et cohérents.
+
+## Consigne finale
+
+Avant de créer ou modifier une page Nino Studio :
+
+1. identifier les composants existants pouvant être réutilisés
+2. conserver exactement le design system actuel
+3. reprendre le même header
+4. reprendre la même sidebar
+5. reprendre les mêmes composants de formulaire
+6. adapter uniquement le contenu métier de la page
+7. éviter toute dérive visuelle entre les différents modules
+
+Le but est qu’un utilisateur puisse passer de :
+
+**Tableau → Vidéos → Séries → Flashy → Planning → Système**
+
+sans jamais avoir l’impression de changer d’application.
