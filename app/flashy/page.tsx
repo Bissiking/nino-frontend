@@ -329,7 +329,20 @@ export default function FlashyPage() {
   function load() {
     setLoading(true);
     setError(null);
-    api.media("short", profileId).then(setItems).catch((err) => setError(err.message ?? "Flashy est indisponible.")).finally(() => setLoading(false));
+    const requestedId = new URLSearchParams(window.location.search).get("media");
+    const requested = requestedId
+      ? api.mediaDetail(requestedId, profileId).catch(() => null)
+      : Promise.resolve(null);
+    Promise.all([api.media("short", profileId), requested])
+      .then(([all, target]) => {
+        if (target?.kind === "short" && target.is_available) {
+          setItems([target, ...all.filter((item) => item.id !== target.id)]);
+          return;
+        }
+        setItems(all);
+      })
+      .catch((err) => setError(err.message ?? "Flashy est indisponible."))
+      .finally(() => setLoading(false));
   }
 
   useEffect(load, [profileId]);
@@ -358,6 +371,7 @@ export default function FlashyPage() {
     activeIndexRef.current = 0;
     setActiveIndex(0);
     setItems((current) => [next, ...current.filter((item) => item.id !== next.id)]);
+    window.history.replaceState(null, "", `/flashy?media=${encodeURIComponent(next.id)}`);
     window.requestAnimationFrame(() => feedRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
   }, []);
 

@@ -523,6 +523,7 @@ export function MediaPlayer({
         muted={muted}
         loop={loop}
         playsInline
+        preload={decision.mode === "hls" ? "metadata" : "auto"}
         poster={poster ? api.assetUrl(poster) ?? undefined : undefined}
         onClick={controls || tapToToggle ? togglePlay : undefined}
         onDoubleClick={() => { if (controls) void toggleFullscreen(); }}

@@ -256,7 +256,7 @@ export const api = {
     return request<MediaItem[]>(`/api/v1/media?${params.toString()}`);
   },
   mediaDetail: (id: string, profileId?: string | null) =>
-    request<MediaItem>(`/api/v1/media/${id}${profileId ? `?profile_id=${profileId}` : ""}`),
+    request<MediaItem>(`/api/v1/media/${encodeURIComponent(id)}${profileId ? `?profile_id=${encodeURIComponent(profileId)}` : ""}`),
   mediaThumbnail: (id: string) =>
     request<MediaItem>(`/api/v1/media/${encodeURIComponent(id)}/thumbnail`, { method: "POST" }),
   seriesDetail: (id: string, profileId?: string | null) =>

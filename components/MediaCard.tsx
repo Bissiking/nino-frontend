@@ -32,7 +32,7 @@ export function MediaCard({ item, priority = false, portrait = false, resume = f
   const posterUrl = api.assetUrl(portrait ? (item.thumbnail_vertical_url ?? item.poster_url) : item.poster_url);
   const remaining = resume ? remainingLabel(item) : null;
   const duration = durationLabel(item.duration_seconds);
-  const href = item.kind === "short" ? "/flashy" : `/watch/${item.id}`;
+  const href = item.kind === "short" ? `/flashy?media=${encodeURIComponent(item.id)}` : `/watch/${encodeURIComponent(item.id)}`;
   const canMarkSeen = item.kind === "movie" && !seen;
 
   async function markAsSeen() {
