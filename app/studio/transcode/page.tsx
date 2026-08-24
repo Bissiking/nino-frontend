@@ -11,14 +11,16 @@ import {
   Loader2,
   Play,
   RotateCw,
+  Save,
   ServerCog,
   Square,
+  Undo2,
   WifiOff
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ErrorState, LoadingState } from "@/components/StateBlock";
 import { api } from "@/lib/api";
-import type { MediaItem, TranscodeJob, TranscodeSnapshot, TranscodeWorkerControl } from "@/types/nino";
+import type { MediaItem, TranscodeConfig, TranscodeJob, TranscodeSnapshot, TranscodeWorkerControl } from "@/types/nino";
 
 const STATUS_LABELS: Record<TranscodeJob["status"], string> = {
   pending: "En attente",
@@ -43,6 +45,9 @@ function formatAge(seconds: number | null): string {
 export default function StudioTranscodePage() {
   const [snapshot, setSnapshot] = useState<TranscodeSnapshot | null>(null);
   const [worker, setWorker] = useState<TranscodeWorkerControl | null>(null);
+  const [config, setConfig] = useState<TranscodeConfig | null>(null);
+  const [configDraft, setConfigDraft] = useState<TranscodeConfig | null>(null);
+  const [configSaving, setConfigSaving] = useState(false);
   const [mediaTitles, setMediaTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,17 +65,63 @@ export default function StudioTranscodePage() {
         setAccessDenied(true);
         return;
       }
-      const [control, media] = await Promise.all([
+      const [control, media, nextConfig] = await Promise.all([
         api.adminTranscodeWorkerStatus(),
-        api.adminMedia().catch(() => [] as MediaItem[])
+        api.adminMedia().catch(() => [] as MediaItem[]),
+        api.adminTranscodeConfig()
       ]);
       setWorker(control);
+      setConfig(nextConfig);
+      setConfigDraft(nextConfig);
       setMediaTitles(Object.fromEntries(media.map((m) => [m.id, m.title])));
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Impossible de charger le statut du worker.");
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const saveConfig = useCallback(async () => {
+    if (!configDraft) return;
+    setConfigSaving(true);
+    setError(null);
+    try {
+      const saved = await api.updateAdminTranscodeConfig({
+        window_start: configDraft.window_start,
+        window_end: configDraft.window_end,
+        worker_enabled: configDraft.worker_enabled,
+        max_concurrency: configDraft.max_concurrency,
+        poll_seconds: configDraft.poll_seconds,
+        max_attempts: configDraft.max_attempts,
+        worker_nice: configDraft.worker_nice,
+        worker_cpuset: configDraft.worker_cpuset,
+        enable_1080p: configDraft.enable_1080p,
+        enable_720p: configDraft.enable_720p,
+        enable_480p: configDraft.enable_480p
+      });
+      setConfig(saved);
+      setConfigDraft(saved);
+      setActionNotice("Configuration du transcodage enregistrée.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Impossible d’enregistrer la configuration.");
+    } finally {
+      setConfigSaving(false);
+    }
+  }, [configDraft]);
+
+  const resetConfig = useCallback(async () => {
+    setConfigSaving(true);
+    setError(null);
+    try {
+      const saved = await api.resetAdminTranscodeConfig();
+      setConfig(saved);
+      setConfigDraft(saved);
+      setActionNotice("Configuration restaurée depuis l’environnement serveur.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Impossible de restaurer la configuration.");
+    } finally {
+      setConfigSaving(false);
     }
   }, []);
 
@@ -313,6 +364,27 @@ export default function StudioTranscodePage() {
                 </div>
               </div>
             </section>
+
+            {configDraft ? (
+              <section className="studioListPanel transcodeConfigPanel">
+                <div className="studioPanelHeading">
+                  <div><h2>Configuration</h2><p>Réglages effectifs du worker · source {config?.source === "runtime" ? "personnalisée" : "serveur"}</p></div>
+                  <ServerCog size={20} aria-hidden="true" />
+                </div>
+                <div className="transcodeConfigGrid">
+                  <label><span>Début de fenêtre</span><input type="time" value={configDraft.window_start} onChange={(event) => setConfigDraft({ ...configDraft, window_start: event.target.value })} /></label>
+                  <label><span>Fin de fenêtre</span><input type="time" value={configDraft.window_end} onChange={(event) => setConfigDraft({ ...configDraft, window_end: event.target.value })} /></label>
+                  <label><span>Concurrence maximale</span><input type="number" min="1" max="8" value={configDraft.max_concurrency} onChange={(event) => setConfigDraft({ ...configDraft, max_concurrency: Number(event.target.value) })} /></label>
+                  <label><span>Intervalle de polling (s)</span><input type="number" min="1" max="3600" value={configDraft.poll_seconds} onChange={(event) => setConfigDraft({ ...configDraft, poll_seconds: Number(event.target.value) })} /></label>
+                  <label><span>Tentatives maximales</span><input type="number" min="1" max="50" value={configDraft.max_attempts} onChange={(event) => setConfigDraft({ ...configDraft, max_attempts: Number(event.target.value) })} /></label>
+                  <label><span>Priorité nice</span><input type="number" min="-20" max="19" value={configDraft.worker_nice} onChange={(event) => setConfigDraft({ ...configDraft, worker_nice: Number(event.target.value) })} /></label>
+                  <label className="isWide"><span>Affinité CPU</span><input value={configDraft.worker_cpuset} onChange={(event) => setConfigDraft({ ...configDraft, worker_cpuset: event.target.value })} placeholder="Ex. 2-5 — vide pour automatique" /></label>
+                  <fieldset className="isWide"><legend>Qualités produites</legend><label><input type="checkbox" checked={configDraft.enable_1080p} onChange={(event) => setConfigDraft({ ...configDraft, enable_1080p: event.target.checked })} />1080p</label><label><input type="checkbox" checked={configDraft.enable_720p} onChange={(event) => setConfigDraft({ ...configDraft, enable_720p: event.target.checked })} />720p</label><label><input type="checkbox" checked={configDraft.enable_480p} onChange={(event) => setConfigDraft({ ...configDraft, enable_480p: event.target.checked })} />480p</label></fieldset>
+                  <label className="transcodeWorkerToggle isWide"><input type="checkbox" checked={configDraft.worker_enabled} onChange={(event) => setConfigDraft({ ...configDraft, worker_enabled: event.target.checked })} /><span><strong>Autoriser le worker</strong><small>Le démarrage manuel reste disponible lorsque cette option est active.</small></span></label>
+                </div>
+                <footer className="transcodeConfigActions"><button className="secondaryButton" type="button" onClick={() => void resetConfig()} disabled={configSaving}><Undo2 size={16} />Restaurer les valeurs serveur</button><button className="primaryButton" type="button" onClick={() => void saveConfig()} disabled={configSaving}>{configSaving ? <Loader2 className="spin" size={16} /> : <Save size={16} />}Enregistrer la configuration</button></footer>
+              </section>
+            ) : null}
 
             <section className="transcodeCounts" aria-label="Compteurs de jobs">
               <div className="transcodeCount"><span>En attente</span><strong>{counts.pending}</strong></div>

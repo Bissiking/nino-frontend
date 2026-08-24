@@ -111,7 +111,11 @@ Conserver le composant V8 actuel : grands chiffres creux `#ff5264`, fond de chif
 
 ### Nino Studio
 
-Studio reprend le tableau de bord V7 : navigation horizontale, indicateurs compacts, panneaux noirs et workflow d’upload en étapes. L’import conserve le drag-and-drop, le choix fichier/HLS, les métadonnées, la publication, les visuels, l’aperçu du fichier et les états d’envoi. Les appels et validations restent ceux du backend V8.
+Studio est une surface d’administration autonome, explicitement distincte de l’expérience de visionnage. Il utilise un header fixe compact, une navigation latérale, une recherche globale et des panneaux de travail noirs légèrement relevés. Cette structure ne doit jamais se propager aux routes publiques de Nino.
+
+L’accent orange signale l’action principale et la section active. Le vert reste réservé aux états valides ou publiés, le violet aux états privés ou intermédiaires, le jaune à l’attente et le rouge aux erreurs ou destructions. Les formulaires et les écrans d’édition sont organisés en onglets stables, avec aperçu sticky sur desktop et recomposition verticale sur tablette/mobile.
+
+L’import conserve le drag-and-drop, le choix fichier/HLS, les métadonnées, la publication, les visuels, l’aperçu du fichier et les états d’envoi. Les appels, données et validations restent exclusivement ceux du backend V8 ; une mesure indisponible est dite indisponible plutôt que simulée.
 
 ## Règles
 

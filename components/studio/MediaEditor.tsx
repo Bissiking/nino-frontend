@@ -15,6 +15,7 @@ type SourceMode = "file" | "hls";
 type MediaKind = "movie" | "short" | "series";
 type VisualField = "thumbnail" | "thumbnail_vertical" | "poster" | "backdrop";
 type VisualUrlKey = "thumbnailUrl" | "thumbnailVerticalUrl" | "posterUrl" | "backdropUrl";
+type EditorTab = "content" | "publication" | "visuals" | "series" | "sensitive";
 
 const CATEGORY_HINTS: Record<string, string> = {
   gaming: "Gameplay et univers vidéoludiques",
@@ -72,6 +73,8 @@ type Props = {
   previewError?: string | null;
   refreshing?: boolean;
   onRefresh?: () => void;
+  initialSeriesId?: string;
+  initialSeasonNumber?: number;
 };
 
 function formatBytes(bytes: number | null | undefined) {
@@ -101,7 +104,7 @@ function activeFlags(media?: MediaItem | null): Record<string, boolean> {
   return result;
 }
 
-function initialForm(kind: MediaKind, media?: MediaItem | null) {
+function initialForm(kind: MediaKind, media?: MediaItem | null, initialSeriesId = "", initialSeasonNumber = 1) {
   return {
     kind,
     title: media?.title ?? "",
@@ -125,8 +128,8 @@ function initialForm(kind: MediaKind, media?: MediaItem | null) {
     noSpoil: media?.no_spoil ?? false,
     isAdult: media?.is_adult ?? false,
     flags: activeFlags(media),
-    seriesId: media?.series_source_id ?? "",
-    seasonNumber: media?.season_number?.toString() ?? "1",
+    seriesId: media?.series_source_id ?? initialSeriesId,
+    seasonNumber: media?.season_number?.toString() ?? String(initialSeasonNumber),
     episodeNumber: media?.episode_number?.toString() ?? ""
   };
 }
@@ -144,8 +147,8 @@ function UploadProgressIndicator({ uploadProgress }: { uploadProgress: { loaded:
   );
 }
 
-export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant = "panel", decision = null, previewError = null, refreshing = false, onRefresh }: Props) {
-  const [form, setForm] = useState(() => initialForm(kind, media));
+export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant = "panel", decision = null, previewError = null, refreshing = false, onRefresh, initialSeriesId = "", initialSeasonNumber = 1 }: Props) {
+  const [form, setForm] = useState(() => initialForm(kind, media, initialSeriesId, initialSeasonNumber));
   const [seriesOptions, setSeriesOptions] = useState<MediaItem[]>([]);
   const [sourceMode, setSourceMode] = useState<SourceMode>("file");
   const [files, setFiles] = useState<File[]>([]);
@@ -159,6 +162,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [editorTab, setEditorTab] = useState<EditorTab>("content");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -211,6 +215,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     setAutoFillNote(null);
     setTagDraft("");
     setGenreDraft("");
+    setEditorTab("content");
   }, [kind, media]);
 
   useEffect(() => {
@@ -1040,6 +1045,22 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       saving: "Enregistrement…",
       error: "Erreur d’enregistrement"
     };
+    const editorTabs: { id: EditorTab; label: string; Icon: typeof FileVideo2 }[] = [
+      { id: "content", label: "Contenu", Icon: FileVideo2 },
+      { id: "publication", label: "Publication", Icon: BellRing },
+      { id: "visuals", label: "Visuels", Icon: ImageIcon },
+      ...(form.kind === "movie" ? [{ id: "series" as EditorTab, label: "Série", Icon: Layers3 }] : []),
+      ...(!isSeries ? [{ id: "sensitive" as EditorTab, label: "Contenu sensible", Icon: ShieldAlert }] : [])
+    ];
+    function moveEditorTab(event: KeyboardEvent<HTMLElement>) {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      const currentIndex = editorTabs.findIndex((tab) => tab.id === editorTab);
+      const direction = event.key === "ArrowLeft" ? -1 : 1;
+      const nextTab = editorTabs[(currentIndex + direction + editorTabs.length) % editorTabs.length];
+      event.preventDefault();
+      setEditorTab(nextTab.id);
+      requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-editor-tab="${nextTab.id}"]`)?.focus());
+    }
     return (
       <section className="mediaEditPage">
         <header className="mediaEditPageHeader">
@@ -1083,12 +1104,16 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
           </aside>
 
           <div className="mediaEditMain">
-            {contentSection}
-            {publishSection}
-            {form.kind === "movie" ? seriesSection : null}
-            {visualSection}
-            {thumbnailBlock}
-            {!isSeries ? warningSection : null}
+            <nav className="mediaEditorTabs" role="tablist" aria-label="Sections de l’éditeur" onKeyDown={moveEditorTab}>
+              {editorTabs.map(({ id, label, Icon }) => <button key={id} data-editor-tab={id} type="button" role="tab" tabIndex={editorTab === id ? 0 : -1} aria-selected={editorTab === id} className={editorTab === id ? "isActive" : undefined} onClick={() => setEditorTab(id)}><Icon size={17} aria-hidden="true" />{label}</button>)}
+            </nav>
+            <div className="mediaEditorTabPanel" role="tabpanel">
+              {editorTab === "content" ? contentSection : null}
+              {editorTab === "publication" ? publishSection : null}
+              {editorTab === "series" && form.kind === "movie" ? seriesSection : null}
+              {editorTab === "visuals" ? <>{visualSection}{thumbnailBlock}</> : null}
+              {editorTab === "sensitive" && !isSeries ? warningSection : null}
+            </div>
             {feedback}
           </div>
 

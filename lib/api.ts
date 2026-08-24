@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminEpisodes, ApiResponse, AuthConfig, CommentCreateResult, CommentList, FavoriteToggleResult, HomePayload, InteractionsState, LikeToggleResult, MediaItem, MediaWritePayload, NotificationItem, Profile, PublishSweepResult, SeriesPage, StorageIndexReport, StreamDecision, TokenPair, TranscodeJob, TranscodeSnapshot, TranscodeWorkerControl, User } from "@/types/nino";
+import type { AdminEpisodes, ApiResponse, AuthConfig, CommentCreateResult, CommentList, FavoriteToggleResult, HomePayload, InteractionsState, LikeToggleResult, MediaItem, MediaWritePayload, NotificationItem, Profile, PublishSweepResult, SeriesPage, StorageIndexReport, StreamDecision, TokenPair, TranscodeConfig, TranscodeJob, TranscodeSnapshot, TranscodeWorkerControl, User } from "@/types/nino";
 import { getAccessToken, getRefreshToken, redirectToLogin, saveTokens } from "./session";
 
 const API_URL = process.env.NEXT_PUBLIC_NINO_API_URL ?? "http://localhost:8000";
@@ -282,6 +282,10 @@ export const api = {
   },
   notifications: (profileId?: string | null) =>
     request<NotificationItem[]>(`/api/v1/notifications${profileId ? `?profile_id=${profileId}` : ""}`),
+  markNotificationRead: (notificationId: string) =>
+    request<{ id: string; is_read: true }>(`/api/v1/notifications/${encodeURIComponent(notificationId)}/read`, { method: "PATCH" }),
+  markAllNotificationsRead: () =>
+    request<{ updated: number }>("/api/v1/notifications/read-all", { method: "POST" }),
   mediaInteractions: (mediaId: string, profileId?: string | null) =>
     request<InteractionsState>(`/api/v1/media/${mediaId}/interactions${profileId ? `?profile_id=${profileId}` : ""}`),
   toggleLike: (mediaId: string, profileId: string) =>
@@ -324,6 +328,10 @@ export const api = {
   adminTranscodeWorkerStatus: () => request<TranscodeWorkerControl>("/api/v1/admin/transcode/worker"),
   adminTranscodeWorkerStart: () => request<TranscodeWorkerControl>("/api/v1/admin/transcode/worker/start", { method: "POST" }),
   adminTranscodeWorkerStop: () => request<TranscodeWorkerControl>("/api/v1/admin/transcode/worker/stop", { method: "POST" }),
+  adminTranscodeConfig: () => request<TranscodeConfig>("/api/v1/admin/transcode/config"),
+  updateAdminTranscodeConfig: (payload: Partial<Omit<TranscodeConfig, "source">>) =>
+    request<TranscodeConfig>("/api/v1/admin/transcode/config", { method: "PUT", body: JSON.stringify(payload) }),
+  resetAdminTranscodeConfig: () => request<TranscodeConfig>("/api/v1/admin/transcode/config", { method: "DELETE" }),
   adminTranscodeRetry: (jobId: string) =>
     request<TranscodeJob>(`/api/v1/admin/transcode/jobs/${encodeURIComponent(jobId)}/retry`, { method: "POST" }),
   adminTranscodeForce: (jobId: string) =>

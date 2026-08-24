@@ -232,6 +232,18 @@ IDs utilisés par l'interface :
 
 ## Routes nécessaires au frontend
 
+### `GET /api/v1/notifications`
+
+Retourne au maximum 20 notifications globales ou rattachées aux profils du compte connecté. Le paramètre optionnel `profile_id` limite la réponse à ce profil et aux notifications globales.
+
+### `PATCH /api/v1/notifications/{notification_id}/read`
+
+Marque une notification visible par le compte connecté comme lue. Réponse : `{ "id": "uuid", "is_read": true }`.
+
+### `POST /api/v1/notifications/read-all`
+
+Marque comme lues toutes les notifications globales ou rattachées aux profils du compte connecté. Réponse : `{ "updated": 3 }`.
+
 ### `GET /api/v1/auth/config`
 
 Retourne publiquement les méthodes de connexion disponibles, sans aucun secret :

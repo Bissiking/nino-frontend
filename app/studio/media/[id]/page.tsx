@@ -71,12 +71,12 @@ export default function StudioMediaEditPage() {
           previewError={previewError}
           refreshing={refreshing}
           onRefresh={() => void load(true)}
-          onCancel={() => router.push("/studio#videos")}
+          onCancel={() => router.push("/studio/videos")}
           onSaved={(saved) => {
             setMedia(saved);
             void loadPreview(saved.id);
           }}
-          onDeleted={() => router.push("/studio#videos")}
+          onDeleted={() => router.push("/studio/videos")}
         />
       ) : null}
     </AppShell>

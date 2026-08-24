@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Film, Home, LibraryBig, Radio, Search, Zap } from "lucide-react";
 import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
+import { StudioShell } from "./studio/StudioShell";
 import pkg from "@/package.json";
 
 const primaryNav = [
@@ -28,8 +29,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isStudio = pathname.startsWith("/studio");
 
+  if (isStudio) return <StudioShell>{children}</StudioShell>;
+
   return (
-    <div className={`shell ${isStudio ? "isStudioShell" : ""}`}>
+    <div className="shell">
       <TvNavigation />
       <header className="topBar">
         <Link href="/" className="brand" aria-label="Nino — accueil">
