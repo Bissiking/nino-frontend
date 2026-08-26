@@ -176,6 +176,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
   const [extractHint, setExtractHint] = useState<string | null>(null);
   const [autoFillNote, setAutoFillNote] = useState<string | null>(null);
   const [tagPasteFeedback, setTagPasteFeedback] = useState<number | null>(null);
+  const [parentSeries, setParentSeries] = useState<MediaItem | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
@@ -191,6 +192,11 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
   const isShort = form.kind === "short";
   const sourceStepShown = !isEditing && !isSeries;
   const anyFlag = Boolean(form.flags && Object.values(form.flags).some(Boolean));
+  const isInherited = !isSeries && Boolean(parentSeries);
+  const inheritedCategory = isInherited ? (parentSeries?.category ?? "") : form.category;
+  const inheritedGenres = isInherited ? (parentSeries?.genres ?? []) : form.genres.split(",").map((g) => g.trim()).filter(Boolean);
+  const inheritedNotifyDiscord = isInherited ? Boolean(parentSeries?.notify_discord) : form.notifyDiscord;
+  const inheritedNoSpoil = isInherited ? Boolean(parentSeries?.no_spoil) : form.noSpoil;
 
   useEffect(() => {
     function onShortcut(event: globalThis.KeyboardEvent) {
@@ -223,6 +229,23 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       .then((items) => setSeriesOptions(items.filter((item) => item.kind === "series")))
       .catch(() => setSeriesOptions([]));
   }, []);
+
+  useEffect(() => {
+    if (!form.seriesId || isSeries) { setParentSeries(null); return; }
+    const found = seriesOptions.find((s) => s.id === form.seriesId);
+    if (found) { setParentSeries(found); return; }
+    api.adminMedia()
+      .then((items) => {
+        const s = items.find((item) => item.id === form.seriesId && item.kind === "series");
+        setParentSeries(s ?? null);
+      })
+      .catch(() => setParentSeries(null));
+  }, [form.seriesId, isSeries, seriesOptions]);
+
+  useEffect(() => {
+    if (!isInherited || !parentSeries?.tags?.length || form.tags.length) return;
+    setForm((current) => ({ ...current, tags: parentSeries.tags }));
+  }, [isInherited, parentSeries?.tags, form.tags.length]);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -684,13 +707,13 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       title: form.title.trim(),
       synopsis: form.synopsis.trim(),
       description: form.description.trim(),
-      category: form.category.trim() || null,
+      category: isInherited ? (inheritedCategory || null) : (form.category.trim() || null),
       tags: form.tags.map((tag) => tag.trim()).filter(Boolean),
       year: form.year ? Number(form.year) : null,
       duration_seconds: Number(form.duration || 0),
       intro_start_seconds: Number(form.introStart || 0),
       intro_end_seconds: Number(form.introEnd || 0),
-      genres: form.genres.split(",").map((genre) => genre.trim()).filter(Boolean),
+      genres: isInherited ? inheritedGenres : form.genres.split(",").map((genre) => genre.trim()).filter(Boolean),
       poster_url: form.posterUrl.trim() || null,
       backdrop_url: form.backdropUrl.trim() || null,
       thumbnail_url: form.thumbnailUrl.trim() || null,
@@ -698,7 +721,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       visibility: form.visibility,
       publish_at: form.publishAt ? new Date(form.publishAt).toISOString() : null,
       is_available: form.isAvailable,
-      notify_discord: form.notifyDiscord,
+      notify_discord: isInherited ? inheritedNotifyDiscord : form.notifyDiscord,
       no_spoil: isSeries ? form.noSpoil : false,
       is_adult: form.isAdult || flags.length > 0,
       content_flags: flags,
@@ -810,13 +833,20 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
           </div>
         </div> : null}
         <div className="isWide mediaCategoryField">
-          <span>Catégorie <small>le thème principal du contenu, visible dans le catalogue</small></span>
-          <div className="mediaCategoryPicker" role="radiogroup" aria-label="Catégorie">
-            <button type="button" role="radio" tabIndex={form.category ? -1 : 0} aria-checked={!form.category} className={!form.category ? "isSelected" : undefined} onClick={() => update("category", "")}><span className="mediaCategorySwatch isEmpty" aria-hidden="true" /><span><strong>Aucune</strong><small>Non encore classé</small></span></button>
-            {Object.entries(CATEGORIES).map(([slug, label]) => (
-              <button key={slug} type="button" role="radio" tabIndex={form.category === slug ? 0 : -1} aria-checked={form.category === slug} className={form.category === slug ? "isSelected" : undefined} onClick={() => update("category", form.category === slug ? "" : slug)}><span className="mediaCategorySwatch" data-category={slug} aria-hidden="true" /><span><strong>{label}</strong><small>{CATEGORY_HINTS[slug]}</small></span></button>
-            ))}
-          </div>
+          <span>Catégorie <small>{isInherited ? "définie par la série" : "le thème principal du contenu, visible dans le catalogue"}</small></span>
+          {isInherited ? (
+            <div className="mediaInheritedField">
+              <Lock size={14} aria-hidden="true" />
+              <span>{inheritedCategory ? (CATEGORIES[inheritedCategory] ?? inheritedCategory) : "Aucune"}</span>
+            </div>
+          ) : (
+            <div className="mediaCategoryPicker" role="radiogroup" aria-label="Catégorie">
+              <button type="button" role="radio" tabIndex={form.category ? -1 : 0} aria-checked={!form.category} className={!form.category ? "isSelected" : undefined} onClick={() => update("category", "")}><span className="mediaCategorySwatch isEmpty" aria-hidden="true" /><span><strong>Aucune</strong><small>Non encore classé</small></span></button>
+              {Object.entries(CATEGORIES).map(([slug, label]) => (
+                <button key={slug} type="button" role="radio" tabIndex={form.category === slug ? 0 : -1} aria-checked={form.category === slug} className={form.category === slug ? "isSelected" : undefined} onClick={() => update("category", form.category === slug ? "" : slug)}><span className="mediaCategorySwatch" data-category={slug} aria-hidden="true" /><span><strong>{label}</strong><small>{CATEGORY_HINTS[slug]}</small></span></button>
+              ))}
+            </div>
+          )}
         </div>
         {!isShort ? <label className="isWide">
           <span>Tags <small>Entrée, Espace ou virgule pour valider · clic pour retirer</small></span>
@@ -843,27 +873,34 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
         </label> : null}
         {isSeries ? <label><span>Année</span><input type="number" min="1900" max="2200" value={form.year} onChange={(event) => update("year", event.target.value)} /></label> : null}
         <div className="isWide">
-          <span>Genres <small>Entrée ou virgule pour valider · clic pour retirer</small></span>
-          <span className="mediaTagsPicker" onClick={(event) => { if (event.target === event.currentTarget) genreInputRef.current?.focus(); }}>
-            {genreList().map((genre) => (
-              <span key={genre} className="mediaGenreChip" onMouseDown={(event) => event.preventDefault()} onClick={() => removeGenre(genre)}>
-                {genre}
-                <button type="button" aria-label={`Retirer le genre ${genre}`} onClick={(event) => { event.stopPropagation(); removeGenre(genre); }}><X size={12} aria-hidden="true" /></button>
-              </span>
-            ))}
-            <input
-              ref={genreInputRef}
-              className="mediaTagsInput"
-              value={genreDraft}
-              onChange={(event) => setGenreDraft(event.target.value)}
-              onKeyDown={onGenreKeyDown}
-              onPaste={handleGenrePaste}
-              onBlur={() => { appendGenre(genreDraft); setGenreDraft(""); }}
-              placeholder={genreList().length ? "" : "Ajouter un genre…"}
-              aria-label="Ajouter un genre"
-            />
-            <span className="mediaTagPasteNote" role="status" aria-live="polite">{genrePasteFeedback !== null ? `${genrePasteFeedback} genre${genrePasteFeedback > 1 ? "s" : ""} ajouté${genrePasteFeedback > 1 ? "s" : ""} · coller une liste pour tout ajouter` : "Coller une liste (une virgule ou un espace = un genre)"}</span>
-          </span>
+          <span>Genres <small>{isInherited ? "définis par la série" : "Entrée ou virgule pour valider · clic pour retirer"}</small></span>
+          {isInherited ? (
+            <div className="mediaInheritedField">
+              <Lock size={14} aria-hidden="true" />
+              <span>{inheritedGenres.length ? inheritedGenres.join(", ") : "Aucun"}</span>
+            </div>
+          ) : (
+            <span className="mediaTagsPicker" onClick={(event) => { if (event.target === event.currentTarget) genreInputRef.current?.focus(); }}>
+              {genreList().map((genre) => (
+                <span key={genre} className="mediaGenreChip" onMouseDown={(event) => event.preventDefault()} onClick={() => removeGenre(genre)}>
+                  {genre}
+                  <button type="button" aria-label={`Retirer le genre ${genre}`} onClick={(event) => { event.stopPropagation(); removeGenre(genre); }}><X size={12} aria-hidden="true" /></button>
+                </span>
+              ))}
+              <input
+                ref={genreInputRef}
+                className="mediaTagsInput"
+                value={genreDraft}
+                onChange={(event) => setGenreDraft(event.target.value)}
+                onKeyDown={onGenreKeyDown}
+                onPaste={handleGenrePaste}
+                onBlur={() => { appendGenre(genreDraft); setGenreDraft(""); }}
+                placeholder={genreList().length ? "" : "Ajouter un genre…"}
+                aria-label="Ajouter un genre"
+              />
+              <span className="mediaTagPasteNote" role="status" aria-live="polite">{genrePasteFeedback !== null ? `${genrePasteFeedback} genre${genrePasteFeedback > 1 ? "s" : ""} ajouté${genrePasteFeedback > 1 ? "s" : ""} · coller une liste pour tout ajouter` : "Coller une liste (une virgule ou un espace = un genre)"}</span>
+            </span>
+          )}
         </div>
         {!isSeries ? <>
           <label><span>Début de l’intro <small>en secondes</small></span><input type="number" min="0" step="1" value={form.introStart} onChange={(event) => update("introStart", event.target.value)} /></label>
@@ -1016,13 +1053,19 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
         ) : null}
         {isSeries ? <label className="mediaCheckbox isWide" title="Contrôle la visibilité des épisodes programmés sur la page publique de cette série.">
           <input type="checkbox" checked={form.noSpoil} onChange={(event) => update("noSpoil", event.target.checked)} />
-          <span><strong>Masquer les prochains épisodes (No Spoil)</strong><small>Activé : ils restent invisibles jusqu’à leur date de sortie. Désactivé : ils apparaissent verrouillés avec leur date.</small></span>
+          <span><strong>Sorties surprises</strong><small>Activé : les prochains épisodes restent invisibles jusqu'à leur date de sortie. Désactivé : ils apparaissent verrouillés avec leur date.</small></span>
         </label> : null}
-        {!isSeries && form.seriesId ? <div className="mediaNoSpoilHelp isWide"><Lock size={18} aria-hidden="true" /><span><strong>No Spoil est réglé sur la série</strong><small>Cet épisode suit automatiquement le choix effectué dans la fiche de sa série.</small></span></div> : null}
-        {!isSeries ? <label className="mediaCheckbox isWide" title="Notifie le webhook Discord configuré (NINO_DISCORD_WEBHOOK_URL) à la sortie du contenu.">
-          <input type="checkbox" checked={form.notifyDiscord} onChange={(event) => update("notifyDiscord", event.target.checked)} />
-          <span><BellRing size={16} aria-hidden="true" /><strong>Notifier Discord à la sortie</strong></span>
-        </label> : null}
+        {!isSeries && form.seriesId ? <div className="mediaInheritedField isWide"><Lock size={14} aria-hidden="true" /><span><strong>Sorties surprises : {inheritedNoSpoil ? "activé" : "désactivé"}</strong><small> Réglé sur la série. {inheritedNoSpoil ? "Les épisodes à venir sont masqués." : "Les épisodes à venir sont visibles (verrouillés)."}</small></span></div> : null}
+        {!isSeries ? (
+          isInherited ? (
+            <div className="mediaInheritedField isWide"><Lock size={14} aria-hidden="true" /><span><BellRing size={14} aria-hidden="true" /><strong>Notification Discord : {inheritedNotifyDiscord ? "activée" : "désactivée"}</strong><small> Réglé sur la série.</small></span></div>
+          ) : (
+            <label className="mediaCheckbox isWide" title="Notifie le webhook Discord configuré (NINO_DISCORD_WEBHOOK_URL) à la sortie du contenu.">
+              <input type="checkbox" checked={form.notifyDiscord} onChange={(event) => update("notifyDiscord", event.target.checked)} />
+              <span><BellRing size={16} aria-hidden="true" /><strong>Notifier Discord à la sortie</strong></span>
+            </label>
+          )
+        ) : null}
         {!isSeries ? <label className="mediaCheckbox isWide"><input type="checkbox" checked={form.isAvailable} onChange={(event) => update("isAvailable", event.target.checked)} /><span>Autoriser la lecture dès que le contenu est publié</span></label> : null}
       </div>
     </section>

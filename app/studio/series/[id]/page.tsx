@@ -397,7 +397,7 @@ export default function SeriesEditorPage() {
                   <div className="seToggles">
                     <label className="seToggle"><input type="checkbox" checked={form.isAvailable} onChange={(e) => updateField("isAvailable", e.target.checked)} /><span className="seToggleTrack" /><span>Afficher dans le catalogue</span></label>
                     <label className="seToggle"><input type="checkbox" checked={form.notifyDiscord} onChange={(e) => updateField("notifyDiscord", e.target.checked)} /><span className="seToggleTrack" /><span>Notifier Discord à la publication</span></label>
-                    <label className="seToggle"><input type="checkbox" checked={form.noSpoil} onChange={(e) => updateField("noSpoil", e.target.checked)} /><span className="seToggleTrack" /><span>Masquer les épisodes non diffusés</span></label>
+                    <label className="seToggle"><input type="checkbox" checked={form.noSpoil} onChange={(e) => updateField("noSpoil", e.target.checked)} /><span className="seToggleTrack" /><span>Sorties surprises</span></label>
                   </div>
                 </div>
                 <label className="seField isWide">

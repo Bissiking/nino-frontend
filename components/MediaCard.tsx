@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Clock3, Eye, Loader2, Play } from "lucide-react";
+import { Check, Clock3, Eye, Flame, Loader2, Play } from "lucide-react";
 import { api } from "@/lib/api";
 import { getProfileId } from "@/lib/session";
 import type { MediaItem } from "@/types/nino";
@@ -58,6 +58,8 @@ export function MediaCard({ item, priority = false, portrait = false, resume = f
           {posterUrl ? <img src={posterUrl} alt="" loading={priority ? "eager" : "lazy"} className="posterImage" /> : <div className="posterFallback">{item.title.slice(0, 1)}</div>}
           <span className="playChip"><Play size={16} fill="currentColor" aria-hidden="true" /></span>
           {item.kind === "live" ? <span className="liveBadge">En direct</span> : null}
+          {item.is_adult ? <span className="adultBadge"><Flame size={13} aria-hidden="true" />18+</span> : null}
+          {duration && !resume ? <span className="durationBadge">{duration}</span> : null}
           {resume ? <span className="resumeBadge">Reprendre{remaining ? ` · ${remaining}` : ""}</span> : null}
           {item.progress_percent > 0 && item.progress_percent < 95 ? <span className="progressTrack" aria-label={`Progression ${item.progress_percent}%`}><span style={{ width: `${Math.min(item.progress_percent, 100)}%` }} /></span> : null}
         </div>
