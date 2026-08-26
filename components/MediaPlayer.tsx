@@ -39,8 +39,14 @@ type Props = {
 const KEYBOARD_STEPS = 10;
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const PROGRESS_SYNC_MS = 5000;
-const UP_NEXT_LEAD_SECONDS = 30;
 const NOOP = () => {};
+
+function computeUpNextLeadSeconds(duration: number): number {
+  if (!Number.isFinite(duration) || duration <= 0) return 15;
+  if (duration < 120) return 5;
+  if (duration < 600) return 10;
+  return Math.min(60, Math.ceil((duration / 300) * 5 / 5) * 5);
+}
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
@@ -392,7 +398,18 @@ export function MediaPlayer({
     const onPause = () => { setPlaying(false); setShowControls(true); trackProgress(true); };
     const onWaiting = () => setBuffering(true);
     const onPlaying = () => setBuffering(false);
-    const onTime = () => { setCurrentTime(video.currentTime); trackProgress(); };
+    const onTime = () => {
+      const now = video.currentTime;
+      setCurrentTime(now);
+      trackProgress();
+      if (upNext && onUpNextRef.current && !upNextTriggeredRef.current && !upNextCancelledRef.current && duration > 0) {
+        const lead = computeUpNextLeadSeconds(duration);
+        if (now >= duration - lead) {
+          upNextTriggeredRef.current = true;
+          setUpNextCountdown(lead);
+        }
+      }
+    };
     const onLoaded = () => {
       setDuration(video.duration);
       applyResume();
@@ -407,7 +424,6 @@ export function MediaPlayer({
       setShowControls(true);
       setEnded(true);
       trackProgress(true);
-      if (upNext && onUpNextRef.current && !upNextCancelledRef.current) setUpNextCountdown(UP_NEXT_LEAD_SECONDS);
     };
     const onEnterPip = () => setIsPip(true);
     const onLeavePip = () => setIsPip(false);
@@ -495,11 +511,12 @@ export function MediaPlayer({
   const isSeekable = !live && duration > 0 && Number.isFinite(duration);
   const progressPercent = isSeekable ? (currentTime / duration) * 100 : 0;
   const introEnd = Math.min(duration, introEndSeconds);
+  const upNextLead = duration > 0 ? computeUpNextLeadSeconds(duration) : 15;
   const showUpNext = Boolean(
-    controls && ended && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled
+    controls && !error && !offline && upNext && onUpNext && isSeekable && !upNextCancelled && upNextCountdown != null
   );
-  const upNextCountdownDisplay = upNextCountdown ?? UP_NEXT_LEAD_SECONDS;
-  const upNextProgress = Math.min(1, Math.max(0, (UP_NEXT_LEAD_SECONDS - upNextCountdownDisplay) / UP_NEXT_LEAD_SECONDS));
+  const upNextCountdownDisplay = upNextCountdown ?? upNextLead;
+  const upNextProgress = Math.min(1, Math.max(0, (upNextLead - upNextCountdownDisplay) / upNextLead));
   const canSkipIntro = controls
     && isSeekable
     && introStartSeconds >= 0

@@ -104,7 +104,8 @@ export const VISIBILITY_LABELS: Record<string, string> = {
   public: "Publique",
   private: "Privé",
   unlisted: "Unlisted",
-  draft: "Brouillon"
+  draft: "Brouillon",
+  development: "Développement"
 };
 
 export type HlsVariant = {

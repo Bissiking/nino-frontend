@@ -33,7 +33,7 @@ type FormState = {
   genres: string[];
   tags: string[];
   year: string;
-  visibility: "draft" | "private" | "public";
+  visibility: "draft" | "private" | "public" | "development";
   publishAt: string;
   posterUrl: string;
   backdropUrl: string;
@@ -48,6 +48,7 @@ function statusBadge(visibility: string) {
   switch (visibility) {
     case "public": return <span className="seBadge isPublished"><i />Publié</span>;
     case "private": return <span className="seBadge isPrivate"><i />Privé</span>;
+    case "development": return <span className="seBadge isDraft"><i />Développement</span>;
     default: return <span className="seBadge isDraft"><i />Brouillon</span>;
   }
 }
@@ -55,6 +56,7 @@ function statusBadge(visibility: string) {
 function episodeStatusBadge(item: MediaItem) {
   if (item.visibility === "public" && item.is_available) return <span className="seBadge isPublished"><i />Publié</span>;
   if (item.visibility === "private") return <span className="seBadge isPrivate"><i />Privé</span>;
+  if (item.visibility === "development") return <span className="seBadge isDraft"><i />Développement</span>;
   return <span className="seBadge isDraft"><i />Brouillon</span>;
 }
 
@@ -119,7 +121,7 @@ export default function SeriesEditorPage() {
         genres: media.genres ?? [],
         tags: media.tags ?? [],
         year: media.year?.toString() ?? "",
-        visibility: media.visibility as "draft" | "private" | "public",
+        visibility: media.visibility as "draft" | "private" | "public" | "development",
         publishAt: media.publish_at ? media.publish_at.slice(0, 16) : "",
         posterUrl: media.poster_url ?? "",
         backdropUrl: media.backdrop_url ?? "",
@@ -288,8 +290,9 @@ export default function SeriesEditorPage() {
                 <label className="seField">
                   <span>Statut</span>
                   <div className="seSelectWrapper">
-                    <select value={form.visibility} onChange={(e) => updateField("visibility", e.target.value as "draft" | "private" | "public")}>
+                    <select value={form.visibility} onChange={(e) => updateField("visibility", e.target.value as "draft" | "private" | "public" | "development")}>
                       <option value="draft">Brouillon</option>
+                      <option value="development">Développement</option>
                       <option value="private">Privé</option>
                       <option value="public">Publié</option>
                     </select>
@@ -397,7 +400,6 @@ export default function SeriesEditorPage() {
                   <div className="seToggles">
                     <label className="seToggle"><input type="checkbox" checked={form.isAvailable} onChange={(e) => updateField("isAvailable", e.target.checked)} /><span className="seToggleTrack" /><span>Afficher dans le catalogue</span></label>
                     <label className="seToggle"><input type="checkbox" checked={form.notifyDiscord} onChange={(e) => updateField("notifyDiscord", e.target.checked)} /><span className="seToggleTrack" /><span>Notifier Discord à la publication</span></label>
-                    <label className="seToggle"><input type="checkbox" checked={form.noSpoil} onChange={(e) => updateField("noSpoil", e.target.checked)} /><span className="seToggleTrack" /><span>Masquer les épisodes non diffusés</span></label>
                   </div>
                 </div>
                 <label className="seField isWide">

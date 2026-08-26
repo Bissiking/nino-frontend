@@ -27,7 +27,7 @@ const studioNav = [
   { id: "series", href: "/studio/series", label: "Séries", icon: Clapperboard },
   { id: "flashy", href: "/studio/flashy", label: "Flashy", icon: Zap },
   { id: "schedule", href: "/studio/schedule", label: "Planning", icon: CalendarDays },
-  { id: "live", href: "/studio/live", label: "Direct", icon: Radio },
+  { id: "live", href: "/studio/live", label: "DEV", icon: Radio },
   { id: "administration", href: "/studio/administration", label: "Système", icon: Settings }
 ];
 

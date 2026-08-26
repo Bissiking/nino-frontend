@@ -208,10 +208,12 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .portraitCard .posterFrame { aspect-ratio: 9 / 16; }
 .focusTile:hover .posterFrame, .focusTile:focus-visible .posterFrame { border-color: rgba(233, 75, 60, 0.34); box-shadow: var(--shadow-soft); transform: translateY(-5px) scale(1.035); }
 .posterFallback { align-items: center; color: var(--accent); display: flex; font-size: 4rem; font-weight: 900; height: 100%; justify-content: center; }
-.playChip { align-items: center; background: var(--ink); border-radius: 50%; bottom: 12px; color: var(--bg); display: inline-flex; height: 38px; justify-content: center; opacity: 0; position: absolute; right: 12px; transform: translateY(7px); transition: opacity var(--dur-1), transform var(--dur-1); width: 38px; }
-.mediaCard:hover .playChip, .mediaCardLink:focus-visible .playChip { opacity: 1; transform: translateY(0); }
+.playChip { align-items: center; background: var(--ink); border-radius: 50%; color: var(--bg); display: inline-flex; height: 38px; justify-content: center; left: 50%; opacity: 0; position: absolute; top: 50%; transform: translate(-50%, -50%) scale(0.85); transition: opacity var(--dur-1), transform var(--dur-1); width: 38px; }
+.mediaCard:hover .playChip, .mediaCardLink:focus-visible .playChip { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .liveBadge { left: 10px; position: absolute; top: 10px; }
 .resumeBadge { background: rgba(15, 15, 15, 0.88); border-radius: 6px; bottom: 10px; color: var(--ink); font-size: 0.72rem; font-weight: 800; left: 10px; letter-spacing: 0.05em; padding: 6px 9px; position: absolute; text-transform: uppercase; backdrop-filter: blur(6px); }
+.adultBadge { align-items: center; background: #c0392b; border-radius: 6px; color: #fff; display: inline-flex; font-size: 0.72rem; font-weight: 800; gap: 4px; letter-spacing: 0.05em; padding: 5px 8px; position: absolute; right: 10px; bottom: 10px; text-transform: uppercase; z-index: 5; }
+.durationBadge { background: rgba(15, 15, 15, 0.88); border-radius: 4px; bottom: 10px; color: #fff; font-size: 0.72rem; font-weight: 700; left: 10px; letter-spacing: 0.02em; padding: 3px 6px; position: absolute; z-index: 5; backdrop-filter: blur(6px); }
 .mediaTitle { font-size: 0.94rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mediaMeta { align-items: center; color: var(--muted); display: inline-flex; font-size: var(--text-xs); gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .markSeenButton { align-items: center; background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: var(--radius-sm); color: var(--ink); display: inline-flex; font-size: var(--text-xs); font-weight: 800; gap: 6px; min-height: 36px; padding: 0 10px; position: absolute; right: 10px; top: 10px; z-index: 3; }
@@ -2370,11 +2372,11 @@ body.isCinematic { overflow: hidden; }
 .seriesBackdrop p { color: rgba(255, 255, 255, 0.78); font-size: var(--text-md); margin: 0; max-width: 52ch; }
 .seriesSurface .ninoMarkdown { margin-bottom: 14px; }
 .noSpoilNote { color: rgba(255, 255, 255, 0.6); font-size: var(--text-sm); margin-top: 12px; }
-.mediaNoSpoilHelp { align-items: start; background: var(--surface); border-radius: var(--radius-sm); color: var(--muted); display: flex; gap: 11px; padding: 13px 14px; }
-.mediaNoSpoilHelp > svg { color: var(--accent); flex: 0 0 auto; margin-top: 1px; }
-.mediaNoSpoilHelp > span { display: grid; gap: 3px; }
-.mediaNoSpoilHelp strong { color: var(--ink); font-size: var(--text-sm); }
-.mediaNoSpoilHelp small { line-height: 1.45; }
+.mediaInheritedField { align-items: start; background: var(--surface); border-radius: var(--radius-sm); color: var(--muted); display: flex; gap: 11px; padding: 13px 14px; }
+.mediaInheritedField > svg { color: var(--accent); flex: 0 0 auto; margin-top: 1px; }
+.mediaInheritedField > span { display: grid; gap: 3px; }
+.mediaInheritedField strong { color: var(--ink); font-size: var(--text-sm); }
+.mediaInheritedField small { line-height: 1.45; }
 .seriesSeasons { display: grid; gap: 22px; margin-top: 8px; }
 .seriesSeason { min-width: 0; }
 .seriesSeason > summary { align-items: center; cursor: pointer; display: flex; font-family: var(--font-title); font-size: var(--text-lg); font-weight: 800; justify-content: space-between; list-style: none; min-height: 52px; }

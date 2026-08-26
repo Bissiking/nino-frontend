@@ -15,7 +15,7 @@ import { VISIBILITY_LABELS } from "@/types/nino";
 import type { MediaItem } from "@/types/nino";
 
 function kindLabel(kind: string) {
-  const labels: Record<string, string> = { movie: "Vidéo", series: "Série", short: "Flashy", live: "Direct" };
+  const labels: Record<string, string> = { movie: "Vidéo", series: "Série", short: "Flashy", live: "DEV" };
   return labels[kind] ?? kind;
 }
 
@@ -68,7 +68,7 @@ export default function LivePage() {
           {!loading && !error && !accessDenied ? (
             <main className="studioControlContent">
               <header className="studioCommandHeader">
-                <div><h1>Direct</h1><p>Surveillez l'entrée live du catalogue et la future connexion OBS.</p></div>
+                <div><h1>DEV</h1><p>Espace de développement et de test.</p></div>
               </header>
               <div className="studioLiveControlRoom">
                 <section className="studioLiveMonitor">
@@ -90,7 +90,7 @@ export default function LivePage() {
                   {liveItems.length ? (
                     <ul>{liveItems.map((item) => <EditorialItem key={item.id} item={item} />)}</ul>
                   ) : (
-                    <div className="studioLaneEmpty"><Radio size={23} /><p>Aucune entrée de type direct.</p></div>
+                    <div className="studioLaneEmpty"><Radio size={23} /><p>Aucune entrée de type DEV.</p></div>
                   )}
                   <div className="studioDependency"><CircleOff size={15} />API d'ingestion live requise</div>
                 </aside>
