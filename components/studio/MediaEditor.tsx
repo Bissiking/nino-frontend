@@ -1043,7 +1043,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     <section className="mediaPublishSection" aria-labelledby="media-publish-title">
       <div className="mediaEditorSectionTitle"><h3 id="media-publish-title">{isEditing ? "Publication" : sourceStepShown ? "3) Publication" : "2) Publication"}</h3><p>Un brouillon reste visible uniquement dans Nino Studio. « Unlisted » est caché du catalogue mais lisible par lien direct.</p></div>
       <div className="mediaFieldGrid">
-        <label><span>Visibilité</span><select value={form.visibility} onChange={(event) => update("visibility", event.target.value)}><option value="draft">Brouillon</option><option value="private">Privé</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></label>
+        <label><span>Visibilité</span><select value={form.visibility} onChange={(event) => update("visibility", event.target.value)}><option value="draft">Brouillon</option><option value="development">Développement</option><option value="private">Privé</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></label>
         {!isShort ? <label><span>Publication programmée</span><input type="datetime-local" value={form.publishAt} onChange={(event) => update("publishAt", event.target.value)} /></label> : null}
         {isEditing && !isShort ? (
           <div className="isWide mediaPublishTools">
