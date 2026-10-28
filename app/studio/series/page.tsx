@@ -180,7 +180,7 @@ export default function SeriesListPage() {
         <header className="studioSeriesHeader">
           <div className="studioSeriesHeaderContent">
             <h1>Séries</h1>
-            <p>Gérez l'ensemble de vos séries, leurs saisons et épisodes.</p>
+            <p>Gérez l&apos;ensemble de vos séries, leurs saisons et épisodes.</p>
           </div>
           <Link href="/studio/series/new" className="primaryButton">
             <Plus size={18} aria-hidden="true" />

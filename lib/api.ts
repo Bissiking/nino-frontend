@@ -1,7 +1,7 @@
 "use client";
 
 import type { AdminEpisodes, ApiResponse, AuthConfig, CommentCreateResult, CommentList, FavoriteToggleResult, HomePayload, InteractionsState, LikeToggleResult, MediaItem, MediaWritePayload, NotificationItem, Profile, PublishSweepResult, SeriesPage, StorageIndexReport, StreamDecision, TokenPair, TranscodeConfig, TranscodeJob, TranscodeSnapshot, TranscodeWorkerControl, User } from "@/types/nino";
-import { getAccessToken, getRefreshToken, redirectToLogin, saveTokens } from "./session";
+import { getAccessToken, getProfileId, getRefreshToken, redirectToLogin, saveTokens } from "./session";
 
 const API_URL = process.env.NEXT_PUBLIC_NINO_API_URL ?? "http://localhost:8000";
 
@@ -70,7 +70,7 @@ async function refreshAccessToken(): Promise<string> {
   return refreshInFlight;
 }
 
-async function request<T>(path: string, init: RequestInit = {}, requiresAuth = true): Promise<T> {
+async function requestEnvelope<T>(path: string, init: RequestInit = {}, requiresAuth = true) {
   const token = getAccessToken();
   if (requiresAuth && !token) {
     redirectToLogin();
@@ -129,7 +129,16 @@ async function request<T>(path: string, init: RequestInit = {}, requiresAuth = t
   if (!body.success) {
     throw new NinoApiError(body.error.code, body.error.message, body.error.details, response.status);
   }
-  return body.data;
+  return body;
+}
+
+async function request<T>(path: string, init: RequestInit = {}, requiresAuth = true): Promise<T> {
+  return (await requestEnvelope<T>(path, init, requiresAuth)).data;
+}
+
+function withProfile(path: string, profileId: string | null = getProfileId()): string {
+  if (!profileId) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}profile_id=${encodeURIComponent(profileId)}`;
 }
 
 async function uploadWithProgress<T>(
@@ -246,8 +255,8 @@ export const api = {
     form.append("avatar", avatar);
     return request<Profile>(`/api/v1/profiles/${encodeURIComponent(profileId)}/avatar`, { method: "POST", body: form });
   },
-  home: (profileId?: string | null) => request<HomePayload>(`/api/v1/home${profileId ? `?profile_id=${profileId}` : ""}`),
-  media: (kind?: string, profileId?: string | null, pageSize = 24, page = 1) => {
+  home: (profileId: string | null = getProfileId()) => request<HomePayload>(`/api/v1/home${profileId ? `?profile_id=${encodeURIComponent(profileId)}` : ""}`),
+  media: (kind?: string, profileId: string | null = getProfileId(), pageSize = 24, page = 1) => {
     const params = new URLSearchParams();
     if (kind) params.set("kind", kind);
     if (profileId) params.set("profile_id", profileId);
@@ -255,14 +264,25 @@ export const api = {
     params.set("page", String(page));
     return request<MediaItem[]>(`/api/v1/media?${params.toString()}`);
   },
-  mediaDetail: (id: string, profileId?: string | null) =>
+  mediaPage: async (kind?: string, profileId: string | null = getProfileId(), pageSize = 24, page = 1) => {
+    const params = new URLSearchParams({ page_size: String(pageSize), page: String(page) });
+    if (kind) params.set("kind", kind);
+    if (profileId) params.set("profile_id", profileId);
+    const body = await requestEnvelope<MediaItem[]>(`/api/v1/media?${params.toString()}`);
+    const { page: currentPage, page_size, total } = body.meta;
+    if (typeof currentPage !== "number" || typeof page_size !== "number" || typeof total !== "number") {
+      throw new NinoApiError("INVALID_SERVER_RESPONSE", "La pagination du serveur est invalide.");
+    }
+    return { data: body.data, meta: { page: currentPage, page_size, total } };
+  },
+  mediaDetail: (id: string, profileId: string | null = getProfileId()) =>
     request<MediaItem>(`/api/v1/media/${encodeURIComponent(id)}${profileId ? `?profile_id=${encodeURIComponent(profileId)}` : ""}`),
-  mediaThumbnail: (id: string) =>
-    request<MediaItem>(`/api/v1/media/${encodeURIComponent(id)}/thumbnail`, { method: "POST" }),
-  seriesDetail: (id: string, profileId?: string | null) =>
-    request<SeriesPage>(`/api/v1/media/${id}/series${profileId ? `?profile_id=${profileId}` : ""}`),
-  search: (query: string) => request<{ query: string; items: MediaItem[] }>(`/api/v1/search?q=${encodeURIComponent(query)}`),
-  streamDecision: (id: string) => request<StreamDecision>(`/api/v1/stream/${id}/decision`),
+  mediaThumbnail: (id: string, profileId: string | null = getProfileId()) =>
+    request<MediaItem>(withProfile(`/api/v1/media/${encodeURIComponent(id)}/thumbnail`, profileId), { method: "POST" }),
+  seriesDetail: (id: string, profileId: string | null = getProfileId()) =>
+    request<SeriesPage>(`/api/v1/media/${id}/series${profileId ? `?profile_id=${encodeURIComponent(profileId)}` : ""}`),
+  search: (query: string, profileId: string | null = getProfileId()) => request<{ query: string; items: MediaItem[] }>(withProfile(`/api/v1/search?q=${encodeURIComponent(query)}`, profileId)),
+  streamDecision: (id: string, profileId: string | null = getProfileId()) => request<StreamDecision>(withProfile(`/api/v1/stream/${encodeURIComponent(id)}/decision`, profileId)),
   progress: (id: string, profileId: string, positionSeconds: number, durationSeconds: number) => {
     const normalizedDuration = Number.isFinite(durationSeconds) && durationSeconds > 0
       ? Math.max(1, Math.round(durationSeconds))
@@ -280,14 +300,14 @@ export const api = {
       })
     });
   },
-  notifications: (profileId?: string | null) =>
-    request<NotificationItem[]>(`/api/v1/notifications${profileId ? `?profile_id=${profileId}` : ""}`),
+  notifications: (profileId: string | null = getProfileId()) =>
+    request<NotificationItem[]>(`/api/v1/notifications${profileId ? `?profile_id=${encodeURIComponent(profileId)}` : ""}`),
   markNotificationRead: (notificationId: string) =>
     request<{ id: string; is_read: true }>(`/api/v1/notifications/${encodeURIComponent(notificationId)}/read`, { method: "PATCH" }),
   markAllNotificationsRead: () =>
     request<{ updated: number }>("/api/v1/notifications/read-all", { method: "POST" }),
-  mediaInteractions: (mediaId: string, profileId?: string | null) =>
-    request<InteractionsState>(`/api/v1/media/${mediaId}/interactions${profileId ? `?profile_id=${profileId}` : ""}`),
+  mediaInteractions: (mediaId: string, profileId: string | null = getProfileId()) =>
+    request<InteractionsState>(`/api/v1/media/${mediaId}/interactions${profileId ? `?profile_id=${encodeURIComponent(profileId)}` : ""}`),
   toggleLike: (mediaId: string, profileId: string) =>
     request<LikeToggleResult>(`/api/v1/media/${mediaId}/like`, {
       method: "POST",
@@ -300,7 +320,7 @@ export const api = {
     }),
   likedMedia: (profileId: string) => request<MediaItem[]>(`/api/v1/likes?profile_id=${encodeURIComponent(profileId)}`),
   favoritedMedia: (profileId: string) => request<MediaItem[]>(`/api/v1/favorites?profile_id=${encodeURIComponent(profileId)}`),
-  comments: (mediaId: string) => request<CommentList>(`/api/v1/media/${mediaId}/comments`),
+  comments: (mediaId: string, profileId: string | null = getProfileId()) => request<CommentList>(withProfile(`/api/v1/media/${encodeURIComponent(mediaId)}/comments`, profileId)),
   createComment: (mediaId: string, profileId: string, content: string, parentId?: string | null) =>
     request<CommentCreateResult>(`/api/v1/media/${mediaId}/comments`, {
       method: "POST",
@@ -333,7 +353,7 @@ export const api = {
     request<TranscodeConfig>("/api/v1/admin/transcode/config", { method: "PUT", body: JSON.stringify(payload) }),
   resetAdminTranscodeConfig: () => request<TranscodeConfig>("/api/v1/admin/transcode/config", { method: "DELETE" }),
   adminTranscodeRetry: (jobId: string) =>
-    request<TranscodeJob>(`/api/v1/admin/transcode/jobs/${encodeURIComponent(jobId)}/retry`, { method: "POST" }),
+    request<Pick<TranscodeJob, "id" | "status">>(`/api/v1/admin/transcode/jobs/${encodeURIComponent(jobId)}/retry`, { method: "POST" }),
   adminTranscodeForce: (jobId: string) =>
     request<{ id: string; status: "pending"; forced: true }>(`/api/v1/admin/transcode/jobs/${encodeURIComponent(jobId)}/force`, { method: "POST" }),
   adminTranscodeLive: (onSnapshot: (data: TranscodeSnapshot) => void, onError?: () => void): (() => void) => {

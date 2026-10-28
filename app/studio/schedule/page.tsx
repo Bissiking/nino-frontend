@@ -112,7 +112,7 @@ export default function SchedulePage() {
                   {scheduled.length ? (
                     <ul>{scheduled.map((item) => <EditorialItem key={item.id} item={item} now={now} />)}</ul>
                   ) : (
-                    <div className="studioLaneEmpty"><CalendarClock size={23} /><p>Aucune sortie à venir. Définissez une date depuis la fiche d'un média.</p></div>
+                    <div className="studioLaneEmpty"><CalendarClock size={23} /><p>Aucune sortie à venir. Définissez une date depuis la fiche d&apos;un média.</p></div>
                   )}
                 </section>
                 <section className="studioSchedulePanel">

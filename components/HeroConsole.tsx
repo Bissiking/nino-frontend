@@ -21,7 +21,7 @@ export function HeroConsole({ item }: { item: MediaItem | null }) {
         <p>{item.synopsis}</p>
         <div className="heroActions">
           <Link className="primaryButton" href={`/watch/${item.id}`}><Play size={20} fill="currentColor" aria-hidden="true" />Regarder</Link>
-          <Link className="secondaryButton" href={`/watch/${item.id}`}><Info size={20} aria-hidden="true" />Plus d'infos</Link>
+          <Link className="secondaryButton" href={`/watch/${item.id}`}><Info size={20} aria-hidden="true" />Plus d&apos;infos</Link>
         </div>
       </div>
     </section>

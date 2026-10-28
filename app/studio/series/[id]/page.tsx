@@ -105,8 +105,6 @@ export default function SeriesEditorPage() {
     isAdult: false
   });
 
-  useEffect(() => { loadSeries(); }, [seriesId]);
-
   async function loadSeries() {
     setLoading(true);
     setError(null);
@@ -142,6 +140,8 @@ export default function SeriesEditorPage() {
       setError(reason instanceof Error ? reason.message : "Impossible de charger la série.");
     } finally { setLoading(false); }
   }
+
+  useEffect(() => { loadSeries(); }, [seriesId]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((c) => ({ ...c, [key]: value }));

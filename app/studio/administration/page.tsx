@@ -120,7 +120,7 @@ export default function AdministrationPage() {
                   <HardDrive size={22} aria-hidden="true" />
                   <div>
                     <h2 id="studio-storage-overview-title">Stockage système</h2>
-                    <p>Vue d'ensemble de l'utilisation du stockage par type de contenu.</p>
+                    <p>Vue d&apos;ensemble de l&apos;utilisation du stockage par type de contenu.</p>
                   </div>
                 </div>
 

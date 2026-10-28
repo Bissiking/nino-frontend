@@ -6,8 +6,9 @@
     "dev": "node scripts/next-with-env.mjs dev",
     "build": "next build",
     "start": "node scripts/next-with-env.mjs start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint . --max-warnings 72",
+    "typecheck": "tsc --noEmit",
+    "test:contracts": "node --test tests/api-contract.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/sora": "^5.3.0",

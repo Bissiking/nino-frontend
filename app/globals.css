@@ -528,7 +528,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .profileEditor h2 { font-size: 1.25rem; margin: 0; }
 .profileEditor header p { color: var(--muted); font-size: var(--text-sm); line-height: 1.5; margin: 6px 0 0; }
 .profileEditor > label { color: var(--muted); display: grid; font-size: var(--text-sm); gap: 8px; }
-.profileEditor input:not([type="file"]), .profileEditor select { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); min-height: 46px; padding: 0 12px; width: 100%; }
+.profileEditor input:not([type="file"]):not([type="checkbox"]), .profileEditor select { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); min-height: 46px; padding: 0 12px; width: 100%; }
 .profileEditor input:focus, .profileEditor select:focus { border-color: var(--accent); outline: 0; }
 .profileAvatarPicker { align-items: center; justify-items: center; }
 .profileAvatarPicker > span:nth-child(2) { align-items: center; background: var(--surface-2); border-radius: var(--radius-sm); color: var(--ink); cursor: pointer; display: inline-flex; font-weight: 750; gap: 7px; min-height: 42px; padding: 0 14px; position: relative; }
@@ -4357,3 +4357,8 @@ a.episodeRow:hover, a.episodeRow:focus-visible { background: rgba(255, 255, 255,
   .seEpisodesPanel { overflow-x: auto; }
   .seEpisodesTable { min-width: 620px; }
 }
+
+/* F1: native +18 preference, generous label target and visible remote/keyboard focus. */
+.profileEditor > .profileMaturityToggle { align-items: center; display: flex; gap: 12px; min-height: 48px; cursor: pointer; }
+.profileMaturityToggle input[type="checkbox"] { accent-color: var(--accent); flex: 0 0 auto; width: 22px; height: 22px; }
+.profileMaturityToggle:focus-within { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 4px; }

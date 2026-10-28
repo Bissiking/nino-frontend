@@ -1053,7 +1053,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
         ) : null}
         {isSeries ? <label className="mediaCheckbox isWide" title="Contrôle la visibilité des épisodes programmés sur la page publique de cette série.">
           <input type="checkbox" checked={form.noSpoil} onChange={(event) => update("noSpoil", event.target.checked)} />
-          <span><strong>Sorties surprises</strong><small>Activé : les prochains épisodes restent invisibles jusqu'à leur date de sortie. Désactivé : ils apparaissent verrouillés avec leur date.</small></span>
+          <span><strong>Sorties surprises</strong><small>Activé : les prochains épisodes restent invisibles jusqu&apos;à leur date de sortie. Désactivé : ils apparaissent verrouillés avec leur date.</small></span>
         </label> : null}
         {!isSeries && form.seriesId ? <div className="mediaInheritedField isWide"><Lock size={14} aria-hidden="true" /><span><strong>Sorties surprises : {inheritedNoSpoil ? "activé" : "désactivé"}</strong><small> Réglé sur la série. {inheritedNoSpoil ? "Les épisodes à venir sont masqués." : "Les épisodes à venir sont visibles (verrouillés)."}</small></span></div> : null}
         {!isSeries ? (

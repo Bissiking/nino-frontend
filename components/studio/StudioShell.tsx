@@ -58,7 +58,7 @@ export function StudioShell({ children, immersive = false }: { children: React.R
 
   useEffect(() => {
     let active = true;
-    api.me().then((user) => { if (active) setDisplayName(user.display_name || user.email); }).catch(() => null);
+    api.me().then((user) => { if (active) setDisplayName(user.display_name || user.email || "Studio"); }).catch(() => null);
     return () => { active = false; };
   }, []);
 

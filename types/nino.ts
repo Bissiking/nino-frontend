@@ -1,3 +1,5 @@
+import type { ApiSchemas } from "./nino-api.generated";
+
 export type ApiError = {
   code: string;
   message: string;
@@ -8,76 +10,16 @@ export type ApiResponse<T> =
   | { success: true; data: T; meta: Record<string, unknown> }
   | { success: false; error: ApiError };
 
-export type TokenPair = {
-  access_token: string;
-  refresh_token: string;
-  token_type: "bearer";
-};
+export type TokenPair = Required<ApiSchemas["TokenPair"]>;
 
-export type AuthConfig = {
-  provider: "local" | "kyros" | "hybrid" | string;
-  kyros_login_mode: "sso" | "direct" | "hybrid" | null;
-  sso_enabled: boolean;
-  password_enabled: boolean;
-  sso_version: string | null;
-};
+export type AuthConfig = Required<ApiSchemas["AuthConfigOut"]>;
 
-export type User = {
-  id: string;
-  email: string;
-  display_name: string;
-  is_admin: boolean;
-};
+export type User = Required<ApiSchemas["UserOut"]>;
 
-export type Profile = {
-  id: string;
-  name: string;
-  avatar: string | null;
-  maturity_level: string;
-  language: string;
-};
+export type Profile = Required<ApiSchemas["ProfileOut"]>;
 
-export type MediaItem = {
-  id: string;
-  kind: "movie" | "series" | "short" | "live" | string;
-  title: string;
-  synopsis: string;
-  description: string;
-  category: string | null;
-  tags: string[];
-  year: number | null;
-  duration_seconds: number;
-  intro_start_seconds: number;
-  intro_end_seconds: number;
-  genres: string[];
-  poster_url: string | null;
-  backdrop_url: string | null;
-  thumbnail_url: string | null;
-  thumbnail_vertical_url: string | null;
-  rating: number | null;
-  is_available: boolean;
-  is_adult: boolean;
-  content_flags: string[];
-  no_spoil: boolean;
-  series_source_id: string | null;
-  season_number: number | null;
-  episode_number: number | null;
-  notify_discord?: boolean;
-  progress_percent: number;
-  position_seconds?: number | null;
-  visibility: "public" | "private" | "unlisted" | "draft" | string;
-  publish_at: string | null;
-  source_kind: "file" | "hls" | null;
-  source_filename: string | null;
-  file_size_bytes: number | null;
-  source_origin: "upload" | "luma_storage" | "transcode" | string | null;
-  hls_variants: HlsVariant[];
-  encoding_status?: "pending" | "running" | "ready" | "failed" | null;
-  hls_status?: "ready" | null;
-  liked?: boolean;
-  favorited?: boolean;
-  like_count?: number;
-};
+export type MediaItem = Required<ApiSchemas["MediaOut"]> &
+  Partial<Pick<ApiSchemas["AdminMediaOut"], "notify_discord" | "discord_notified_at" | "source_origin" | "hls_variants">>;
 
 export const CATEGORIES: Record<string, string> = {
   gaming: "Gaming",
@@ -199,102 +141,27 @@ export type HomePayload = {
   rails: HomeRail[];
 };
 
-export type StreamDecision = {
-  media_id: string;
-  mode: string;
-  url: string;
-  mime_type: string;
-  expires_in: number;
-  reason: string;
-};
+export type StreamDecision = Required<ApiSchemas["StreamDecision"]>;
 
-export type NotificationItem = {
-  id: string;
-  title: string;
-  message: string;
-  level: string;
-  is_read: boolean;
-  created_at: string;
-};
+export type NotificationItem = Required<ApiSchemas["NotificationOut"]>;
 
-export type InteractionsState = {
-  media_id: string;
-  liked: boolean;
-  favorited: boolean;
-  like_count: number;
-  comment_count: number;
-};
+export type InteractionsState = Required<ApiSchemas["InteractionsState"]>;
 
-export type LikeToggleResult = {
-  media_id: string;
-  liked: boolean;
-  like_count: number;
-};
+export type LikeToggleResult = Required<ApiSchemas["LikeOut"]>;
 
-export type FavoriteToggleResult = {
-  media_id: string;
-  favorited: boolean;
-};
+export type FavoriteToggleResult = Required<ApiSchemas["FavoriteOut"]>;
 
-export type CommentItem = {
-  id: string;
-  media_id: string;
-  profile_id: string;
-  parent_id: string | null;
-  content: string;
-  author_name: string;
-  created_at: string | null;
-};
+export type CommentItem = Required<ApiSchemas["CommentOut"]>;
 
-export type CommentList = {
-  media_id: string;
-  comments: CommentItem[];
-};
+export type CommentList = Required<ApiSchemas["CommentsOut"]>;
 
-export type CommentCreateResult = {
-  comment: CommentItem;
-  comment_count: number;
-};
+export type CommentCreateResult = Required<ApiSchemas["CommentCreatedOut"]>;
 
-export type TranscodeJob = {
-  id: string;
-  media_id: string;
-  status: "pending" | "running" | "failed" | "done";
-  attempts: number;
-  priority: number;
-  worker: string | null;
-  error: string | null;
-  progress: number | null;
-  stage: string | null;
-  stale: boolean;
-  created_at: string | null;
-  started_at: string | null;
-  finished_at: string | null;
-  last_heartbeat: string | null;
-};
+export type TranscodeJob = Required<ApiSchemas["TranscodeJobOut"]>;
 
-export type TranscodeWorkerControl = {
-  mode: "systemd" | "process";
-  systemd_service: string | null;
-  systemd_active: boolean | null;
-  managed_pid: number | null;
-  managed_alive: boolean;
-};
+export type TranscodeWorkerControl = Required<ApiSchemas["WorkerControlOut"]>;
 
-export type TranscodeConfig = {
-  window_start: string;
-  window_end: string;
-  worker_enabled: boolean;
-  max_concurrency: number;
-  poll_seconds: number;
-  max_attempts: number;
-  worker_nice: number;
-  worker_cpuset: string;
-  enable_1080p: boolean;
-  enable_720p: boolean;
-  enable_480p: boolean;
-  source: "runtime" | "config";
-};
+export type TranscodeConfig = Required<ApiSchemas["TranscodeConfigOut"]>;
 
 export type TranscodeSnapshot = {
   worker_enabled: boolean;

@@ -79,7 +79,7 @@ export default function LivePage() {
                   <div>
                     <Radio size={38} aria-hidden="true" />
                     <h2>Signal non vérifiable</h2>
-                    <p>L'ingestion OBS n'est pas encore exposée par l'API. Aucun contrôle ne sera simulé ici.</p>
+                    <p>L&apos;ingestion OBS n&apos;est pas encore exposée par l&apos;API. Aucun contrôle ne sera simulé ici.</p>
                   </div>
                 </section>
                 <aside className="studioSystemRail">
@@ -92,7 +92,7 @@ export default function LivePage() {
                   ) : (
                     <div className="studioLaneEmpty"><Radio size={23} /><p>Aucune entrée de type DEV.</p></div>
                   )}
-                  <div className="studioDependency"><CircleOff size={15} />API d'ingestion live requise</div>
+                  <div className="studioDependency"><CircleOff size={15} />API d&apos;ingestion live requise</div>
                 </aside>
               </div>
             </main>

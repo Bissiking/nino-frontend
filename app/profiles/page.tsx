@@ -41,7 +41,7 @@ export default function ProfilesPage() {
   const [editor, setEditor] = useState<EditorTarget>(null);
   const [manageMode, setManageMode] = useState(false);
   const [name, setName] = useState("");
-  const [maturityLevel, setMaturityLevel] = useState("all");
+  const [maturityLevel, setMaturityLevel] = useState("teen");
   const [language, setLanguage] = useState("fr");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export default function ProfilesPage() {
   function openEditor(target: Profile | "new") {
     setEditor(target);
     setName(target === "new" ? "" : target.name);
-    setMaturityLevel(target === "new" ? "all" : target.maturity_level);
+    setMaturityLevel(target === "new" ? "teen" : target.maturity_level);
     setLanguage(target === "new" ? "fr" : target.language);
     setAvatarFile(null);
     setPreviewUrl(null);
@@ -157,7 +157,7 @@ export default function ProfilesPage() {
               <header><div><h2>{editor === "new" ? "Nouveau profil" : `Modifier ${editor.name}`}</h2><p>Ces réglages personnalisent la navigation et l’historique.</p></div><button className="studioIconButton" type="button" onClick={() => setEditor(null)} aria-label="Fermer l’éditeur"><X size={19} /></button></header>
               <label className="profileAvatarPicker"><ProfileAvatar profile={editedProfile} previewUrl={previewUrl} /><span><Camera size={17} />Choisir une image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseAvatar(event.target.files?.[0] ?? null)} /></span><small>JPEG, PNG ou WebP · 2 Mo maximum</small></label>
               <label>Nom du profil<input value={name} onChange={(event) => setName(event.target.value)} minLength={1} maxLength={80} required /></label>
-              <label>Niveau de contenu<select value={maturityLevel} onChange={(event) => setMaturityLevel(event.target.value)}><option value="all">Tous les contenus</option><option value="teen">Adolescents</option><option value="kids">Enfants</option></select></label>
+              <label className="profileMaturityToggle"><input type="checkbox" checked={maturityLevel === "all"} onChange={(event) => setMaturityLevel(event.target.checked ? "all" : "teen")} />Autoriser les contenus +18</label>
               <label>Langue<select value={language} onChange={(event) => setLanguage(event.target.value)}><option value="fr">Français</option><option value="en">English</option></select></label>
               {formError ? <p className="formError" role="alert">{formError}</p> : null}
               <div className="profileEditorActions"><button className="primaryButton" type="submit" disabled={saving || !name.trim()}>{saving ? <Loader2 className="spin" size={18} /> : null}{saving ? "Enregistrement…" : "Enregistrer"}</button>{editedProfile ? <button className="dangerButton" type="button" onClick={() => void removeProfile(editedProfile)} disabled={saving || profiles.length <= 1}><Trash2 size={17} />Supprimer</button> : null}</div>

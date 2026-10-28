@@ -212,7 +212,7 @@ export default function StudioTranscodePage() {
     } finally {
       setForcing(null);
     }
-  }, [snapshot?.worker_enabled, worker]);
+  }, [snapshot, worker]);
 
   const counts = snapshot?.counts ?? { pending: 0, running: 0, failed: 0, done: 0 };
   const systemMode = worker?.mode === "systemd";
