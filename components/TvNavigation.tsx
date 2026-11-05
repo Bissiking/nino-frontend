@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-const focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])";
+const focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
 function focusKey(element: HTMLElement) {
   return element.dataset.focusKey ?? element.getAttribute("href") ?? element.getAttribute("aria-label") ?? element.textContent?.trim() ?? "";
@@ -27,14 +27,15 @@ export function TvNavigation() {
 
     function moveFocus(event: KeyboardEvent) {
       const directions = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
-      if (!directions.has(event.key)) return;
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.defaultPrevented || !directions.has(event.key)) return;
+      if (event.target instanceof HTMLElement && event.target.closest("[role=tablist]") && ["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      if (event.target instanceof HTMLElement && (event.target.isContentEditable || event.target.closest("input, textarea, select"))) return;
 
       const scope = document.querySelector<HTMLElement>("[aria-modal='true']") ?? document;
       const elements = Array.from(scope.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => {
         const style = window.getComputedStyle(element);
         const rect = element.getBoundingClientRect();
-        return style.visibility !== "hidden" && style.display !== "none" && rect.width > 0 && rect.height > 0;
+        return element.tabIndex >= 0 && !element.closest("[hidden], [inert]") && style.visibility !== "hidden" && style.display !== "none" && rect.width > 0 && rect.height > 0;
       });
       if (!elements.length) return;
 

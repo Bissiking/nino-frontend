@@ -1,0 +1,6 @@
+.icon { display: inline-block; flex: none; vertical-align: middle; }
+.icon[data-state="active"] { color: var(--nino-orange, #a63b20); }
+.icon[data-state="inactive"] { color: var(--nino-muted, currentColor); }
+.icon[data-state="error"] { color: var(--nino-danger, #b42318); }
+.icon[data-state="success"] { color: var(--nino-success, #067647); }
+@media (forced-colors: active) { .icon { color: CanvasText; } }

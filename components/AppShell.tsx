@@ -3,18 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Home, LibraryBig, Search, Zap } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
 import { StudioShell } from "./studio/StudioShell";
 import pkg from "@/package.json";
 
 const primaryNav = [
-  { href: "/", label: "Accueil", icon: Home },
-  { href: "/search", label: "Recherche", icon: Search },
-  { href: "/videos", label: "Vidéos", icon: Film },
-  { href: "/series", label: "Séries", icon: LibraryBig },
-  { href: "/flashy", label: "Flashy", icon: Zap }
+  { href: "/", label: "Accueil", icon: "home" },
+  { href: "/search", label: "Recherche", icon: "search" },
+  { href: "/videos", label: "Vidéos", icon: "video" },
+  { href: "/series", label: "Séries", icon: "library" },
+  { href: "/flashy", label: "Flashy", icon: "flashy" }
 ];
 
 const mobileNav = [primaryNav[0], primaryNav[4], primaryNav[1], primaryNav[3]];
@@ -58,9 +58,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav className="bottomNav" aria-label="Navigation mobile">
         {mobileNav.map((item) => {
-          const Icon = item.icon;
+
           const active = isActive(pathname, item.href);
-          return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-label={item.label} aria-current={active ? "page" : undefined}><Icon size={21} aria-hidden="true" /><span>{item.label}</span></Link>;
+          return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-label={item.label} aria-current={active ? "page" : undefined}><Icon name={item.icon} variant="outline" size={21} /><span>{item.label}</span></Link>;
         })}
       </nav>
     </div>

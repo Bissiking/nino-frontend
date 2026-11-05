@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Icon } from "@/components/icons";
 import type { HomeRail } from "@/types/nino";
 import { CarouselViewport } from "./CarouselViewport";
 import { EmptyState } from "./StateBlock";
@@ -26,7 +26,7 @@ export function Rail({ rail }: { rail: HomeRail }) {
     <section className={`rail ${portrait ? "homeFlashyRail" : ""}`} id={rail.id} aria-labelledby={`rail-${rail.id}`}>
       <div className="railHeader">
         <h2 id={`rail-${rail.id}`}>{rail.title}</h2>
-        {moreHref && rail.items.length ? <Link href={moreHref}>Voir plus <ChevronRight size={18} aria-hidden="true" /></Link> : null}
+        {moreHref && rail.items.length ? <Link href={moreHref}>Voir plus <Icon name="chevron-right" variant="outline" size={18} /></Link> : null}
       </div>
       {items.length ? (
         <CarouselViewport className={`railScroller ${portrait ? "portraitScroller" : ""}`} label={rail.title}>

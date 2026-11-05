@@ -1,0 +1,37 @@
+/* V9 preview scope only. No :root override before visual approval. */
+[data-nino-ui="v9"] {
+  --nino-bg: #08090d;
+  --nino-surface: #14161e;
+  --nino-elevated: #1e212a;
+  --nino-border: #30333b;
+  --nino-control-border: #7e8391;
+  --nino-foreground: #f5f5f7;
+  --nino-muted: #adb1bc;
+  --nino-coral: #e94b3c;
+  --nino-orange: #f17c58;
+  --nino-on-accent: #08090d;
+  --nino-success: #4bb38a;
+  --nino-warning: #e8b85a;
+  --nino-danger: #eb6a6a;
+  --nino-focus: #f5f5f7;
+  --nino-font: "Sora Variable", "Helvetica Neue", Arial, sans-serif;
+  --nino-text-small: 0.875rem;
+  --nino-text-body: 1rem;
+  --nino-text-title: clamp(1.5rem, 2.3vw, 2rem);
+  --nino-text-display: clamp(2rem, 4vw, 3.5rem);
+  --nino-space-1: 0.25rem;
+  --nino-space-2: 0.5rem;
+  --nino-space-3: 0.75rem;
+  --nino-space-4: 1rem;
+  --nino-space-6: 1.5rem;
+  --nino-space-8: 2rem;
+  --nino-space-12: 3rem;
+  --nino-radius-control: 0.5rem;
+  --nino-radius-panel: 0.75rem;
+  --nino-target: 2.75rem;
+  --nino-target-tv: 3.5rem;
+  --nino-shadow-overlay: 0 18px 56px rgb(0 0 0 / 55%);
+  --nino-motion-fast: 160ms;
+  --nino-motion-overlay: 280ms;
+  --nino-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}

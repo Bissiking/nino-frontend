@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Icon } from "@/components/icons";
 import type { HomeRail } from "@/types/nino";
 
 export function CategoryStrip({ rails }: { rails: HomeRail[] }) {
@@ -10,7 +10,7 @@ export function CategoryStrip({ rails }: { rails: HomeRail[] }) {
     <section className="categorySection" id="categories" aria-labelledby="category-title">
       <div className="railHeader"><h2 id="category-title">Explorer par catégorie</h2></div>
       <div className="categoryStrip">
-        {categories.map((category) => <Link href={`/search?q=${encodeURIComponent(category)}`} key={category}><span>{category}</span><ChevronRight size={20} aria-hidden="true" /></Link>)}
+        {categories.map((category) => <Link href={`/search?q=${encodeURIComponent(category)}`} key={category}><span>{category}</span><Icon name="chevron-right" variant="outline" size={20} /></Link>)}
       </div>
     </section>
   );

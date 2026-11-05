@@ -1,0 +1,22 @@
+.brandRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--nino-space-6); margin-block-end: var(--nino-space-8); }
+.brandRow img { width: 111px; height: auto; }
+.stack { display: grid; gap: var(--nino-space-6); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--nino-space-3); margin-block: var(--nino-space-4); }
+.twoColumns { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--nino-space-8); align-items: start; }
+.twoColumns > *, .stack > * { min-width: 0; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: var(--nino-space-4); }
+.swatches > div { display: grid; gap: var(--nino-space-2); }
+.swatches > div > span:first-child { height: 4rem; border: 1px solid var(--nino-control-border); border-radius: var(--nino-radius-control); }
+.artworkGrid { display: grid; gap: var(--nino-space-6); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.toastDock { position: fixed; inset-inline: var(--nino-space-6); bottom: var(--nino-space-6); margin-inline: auto; max-width: 38rem; z-index: 50; }
+.footer { color: var(--nino-muted); border-top: 1px solid var(--nino-border); padding-top: var(--nino-space-6); margin-top: var(--nino-space-12); }
+.iconGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--nino-space-4); }
+.iconGrid > div { display: flex; align-items: center; gap: var(--nino-space-3); padding-block: var(--nino-space-3); }
+.lightSample { display: flex; align-items: center; gap: var(--nino-space-4); padding: var(--nino-space-4); background: var(--nino-foreground); color: var(--nino-bg); border-radius: var(--nino-radius-control); }
+.skip { position: absolute; top: -100px; left: var(--nino-space-6); padding: var(--nino-space-3); color: var(--nino-on-accent); background: var(--nino-orange); z-index: 60; }
+.skip:focus { top: var(--nino-space-3); }
+@media (max-width: 48rem) {
+  .twoColumns { grid-template-columns: minmax(0, 1fr); }
+  .artworkGrid { grid-template-columns: minmax(0, 1fr); }
+  .toastDock { inset-inline: var(--nino-space-3); bottom: var(--nino-space-3); }
+}

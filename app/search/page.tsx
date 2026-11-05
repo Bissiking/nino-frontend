@@ -2,7 +2,7 @@
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { AppShell } from "@/components/AppShell";
 import { MediaCard } from "@/components/MediaCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StateBlock";
@@ -41,7 +41,7 @@ function SearchContent() {
       <section className="searchSurface">
         <div className="pageHeading"><h1>Recherche</h1><p>Trouvez rapidement une vidéo par titre, description ou catégorie.</p></div>
         <form className="searchBox" onSubmit={submit}>
-          <Search size={22} aria-hidden="true" />
+          <Icon name="search" variant="outline" size={22} />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Émission, série, créateur ou catégorie" aria-label="Recherche" autoFocus />
           <button className="primaryButton" type="submit">Rechercher</button>
         </form>

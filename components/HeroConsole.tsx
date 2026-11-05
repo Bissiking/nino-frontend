@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Info, Play } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { api } from "@/lib/api";
 import type { MediaItem } from "@/types/nino";
 
@@ -20,8 +20,8 @@ export function HeroConsole({ item }: { item: MediaItem | null }) {
         </div>
         <p>{item.synopsis}</p>
         <div className="heroActions">
-          <Link className="primaryButton" href={`/watch/${item.id}`}><Play size={20} fill="currentColor" aria-hidden="true" />Regarder</Link>
-          <Link className="secondaryButton" href={`/watch/${item.id}`}><Info size={20} aria-hidden="true" />Plus d&apos;infos</Link>
+          <Link className="primaryButton" href={`/watch/${item.id}`}><Icon name="play" variant="outline" size={20} fill="currentColor" />Regarder</Link>
+          <Link className="secondaryButton" href={`/watch/${item.id}`}><Icon name="info" variant="outline" size={20} />Plus d&apos;infos</Link>
         </div>
       </div>
     </section>

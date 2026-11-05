@@ -1,0 +1,16 @@
+.screen { max-width: 96rem; min-height: 100dvh; margin-inline: auto; padding: clamp(1.5rem, 4vw, 4rem); display: flex; flex-direction: column; }
+.brand { display: flex; align-items: center; gap: var(--nino-space-4); }
+.brand img { width: 139px; height: auto; }
+.content { flex: 1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; gap: clamp(3rem, 8vw, 8rem); padding-block: clamp(3rem, 8vw, 7rem); }
+.intro h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.1; letter-spacing: -0.035em; max-width: 12ch; margin: 0 0 var(--nino-space-6); }
+.intro p { color: var(--nino-muted); max-width: 40ch; font-size: 1.125rem; }
+.panel { max-width: 30rem; width: 100%; justify-self: end; padding: clamp(1.5rem, 3vw, 3rem); background: var(--nino-surface); border-radius: var(--nino-radius-panel); display: grid; gap: var(--nino-space-6); }
+.panel h2 { font-size: 1.5rem; margin: 0; }
+.panel p { margin: 0; color: var(--nino-muted); }
+.panel > button { width: 100%; }
+.footer { color: var(--nino-muted); font-size: var(--nino-text-small); padding-block: var(--nino-space-4); border-top: 1px solid var(--nino-border); }
+@media (max-width: 48rem) {
+  .content { grid-template-columns: minmax(0, 1fr); gap: var(--nino-space-8); padding-block: var(--nino-space-12); }
+  .intro h1 { max-width: 16ch; }
+  .panel { max-width: none; justify-self: stretch; }
+}

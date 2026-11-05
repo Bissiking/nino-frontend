@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Icon } from "@/components/icons";
 
 type CarouselViewportProps = {
   children: ReactNode;
@@ -54,10 +54,10 @@ export function CarouselViewport({ children, className, label, ordered = false }
         <div ref={setViewport} className={className} aria-label={label}>{children}</div>
       )}
       <button className="railArrow railArrowPrevious" type="button" onClick={() => move(-1)} disabled={!canGoBack} aria-label={`Afficher les éléments précédents de ${label}`}>
-        <ChevronLeft size={28} aria-hidden="true" />
+        <Icon name="chevron-left" variant="outline" size={28} />
       </button>
       <button className="railArrow railArrowNext" type="button" onClick={() => move(1)} disabled={!canGoForward} aria-label={`Afficher les éléments suivants de ${label}`}>
-        <ChevronRight size={28} aria-hidden="true" />
+        <Icon name="chevron-right" variant="outline" size={28} />
       </button>
     </div>
   );

@@ -6,21 +6,21 @@ import { CategoryStrip } from "@/components/CategoryStrip";
 import { HeroConsole } from "@/components/HeroConsole";
 import { HomeTopTen } from "@/components/HomeTopTen";
 import { Rail } from "@/components/Rail";
-import { ErrorState, LoadingState } from "@/components/StateBlock";
+import { EmptyState, ErrorState, LoadingState } from "@/components/StateBlock";
 import { api } from "@/lib/api";
 import { getProfileId } from "@/lib/session";
 import type { HomePayload } from "@/types/nino";
 
 export default function HomePage() {
   const [home, setHome] = useState<HomePayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
   const profileId = useMemo(() => getProfileId(), []);
 
   function load() {
     setLoading(true);
     setError(null);
-    api.home(profileId).then(setHome).catch((err) => setError(err.message ?? "Connexion au backend impossible.")).finally(() => setLoading(false));
+    api.home(profileId).then(setHome).catch((err) => setError(err instanceof Error ? err : new Error("Impossible de charger les programmes."))).finally(() => setLoading(false));
   }
 
   useEffect(load, [profileId]);
@@ -32,8 +32,9 @@ export default function HomePage() {
   return (
     <AppShell>
       {loading ? <LoadingState label="Synchronisation du catalogue" /> : null}
-      {error ? <ErrorState message={error} onRetry={load} /> : null}
-      {!loading && !error && home ? (
+      {error ? <ErrorState message={error.message} error={error} onRetry={load} /> : null}
+      {!loading && !error && home && !home.hero && home.rails.every((rail) => rail.items.length === 0) ? <EmptyState title="Les programmes arrivent bientôt." message="Votre catalogue est encore vide. Les contenus disponibles apparaîtront ici." /> : null}
+      {!loading && !error && home && (home.hero || home.rails.some((rail) => rail.items.length > 0)) ? (
         <div className="homeStack">
           <HeroConsole item={home.hero} />
           <div className="homeCatalog">
