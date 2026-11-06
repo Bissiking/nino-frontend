@@ -12,19 +12,24 @@ export type DialogProps = {
   description?: string;
   children: ReactNode;
   presentation?: "dialog" | "sheet";
+  className?: string;
+  initialFocus?: string;
 };
 
 // Native dialog owns the modal focus scope, inert background and Escape key.
 // Keep this component mounted so the browser can return focus to the opener.
-export function Dialog({ open, onClose, title, description, children, presentation = "dialog" }: DialogProps) {
+export function Dialog({ open, onClose, title, description, children, presentation = "dialog", className = "", initialFocus }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      if (initialFocus) dialog.querySelector<HTMLElement>(initialFocus)?.focus();
+    }
     if (!open && dialog.open) dialog.close();
-  }, [open]);
+  }, [open, initialFocus]);
 
   useEffect(() => {
     if (!open) return;
@@ -33,9 +38,14 @@ export function Dialog({ open, onClose, title, description, children, presentati
     return () => { document.body.style.overflow = previous; };
   }, [open]);
 
-  return <dialog ref={ref} className={`${styles.dialog} ${presentation === "sheet" ? styles.sheet : ""}`}
+  return <dialog ref={ref} data-nino-ui="v9" className={`${styles.dialog} ${presentation === "sheet" ? styles.sheet : ""} ${className}`}
     aria-modal={open ? true : undefined} aria-labelledby={`${id}-title`} aria-describedby={description ? `${id}-description` : undefined}
     onCancel={(event) => { event.preventDefault(); onClose(); }}
+    onClick={(event) => {
+      if (event.target !== event.currentTarget) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose();
+    }}
     onKeyDown={(event) => {
       if (["BrowserBack", "GoBack"].includes(event.key)) { event.preventDefault(); onClose(); return; }
       if (event.key !== "Tab") return;

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { SessionGate } from "@/components/SessionGate";
 import "@fontsource-variable/sora";
 import "./globals.css";
+import "./navigation.css";
 
 export const metadata: Metadata = {
   title: "Nino V8",

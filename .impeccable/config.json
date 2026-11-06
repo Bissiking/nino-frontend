@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "components/ui/ui.module.css"
+        ],
+        "createdAt": "2026-11-06T09:01:38.151Z",
+        "reason": "Agent: la ligne 82 souligne les boutons role=tab par une bordure basse de 3px, coloree uniquement sur aria-selected=true a la ligne 83; ce repere de selection intentionnel ne dessine pas le contour dune carte arrondie."
+      }
+    ]
+  }
+}

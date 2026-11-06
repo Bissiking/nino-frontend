@@ -6,9 +6,10 @@
     "dev": "node scripts/next-with-env.mjs dev",
     "build": "next build",
     "start": "node scripts/next-with-env.mjs start",
-    "lint": "eslint . --max-warnings 72",
+    "lint": "eslint . --max-warnings 66",
     "typecheck": "tsc --noEmit",
-    "test:contracts": "node --test tests/api-contract.test.mjs"
+    "test:contracts": "node --test tests/api-contract.test.mjs",
+    "test:navigation": "node tests/navigation.browser.mjs"
   },
   "dependencies": {
     "@fontsource-variable/sora": "^5.3.0",

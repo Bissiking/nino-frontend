@@ -1,15 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { StudioShell } from "@/components/studio/StudioShell";
 import { StudioLibrary } from "@/components/studio/StudioLibrary";
 import { useStudioData } from "@/hooks/useStudioData";
 
-export default function VideosPage() {
+function VideosContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { media, loading, error, accessDenied, refresh } = useStudioData();
 
-  function handleDeleted(mediaId: string) {
+  function handleDeleted() {
     refresh();
   }
 
@@ -26,6 +28,7 @@ export default function VideosPage() {
               <StudioLibrary
                 items={media.filter((item) => !["series", "short", "live"].includes(item.kind))}
                 kind="videos"
+                querySeed={searchParams.get("q") ?? ""}
                 onCreate={() => router.push("/studio/videos/new")}
                 onDeleted={handleDeleted}
               />
@@ -35,4 +38,8 @@ export default function VideosPage() {
       </div>
     </StudioShell>
   );
+}
+
+export default function VideosPage() {
+  return <Suspense fallback={<div role="status">Chargement de la bibliothèque…</div>}><VideosContent /></Suspense>;
 }

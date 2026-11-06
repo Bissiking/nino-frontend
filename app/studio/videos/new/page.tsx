@@ -8,6 +8,7 @@ import { StudioShell } from "@/components/studio/StudioShell";
 function NewVideoEditor() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const kind = searchParams.get("kind") === "short" ? "short" : "movie";
   const seriesId = searchParams.get("series") ?? "";
   const season = Math.max(1, Number(searchParams.get("season") ?? 1) || 1);
 
@@ -15,10 +16,11 @@ function NewVideoEditor() {
     <StudioShell>
       <div className="studioCreateStage">
         <MediaEditor
-          kind="movie"
+          key={kind}
+          kind={kind}
           initialSeriesId={seriesId}
           initialSeasonNumber={season}
-          onCancel={() => router.push(seriesId ? `/studio/series/${encodeURIComponent(seriesId)}` : "/studio/videos")}
+          onCancel={() => router.push(seriesId ? `/studio/series/${encodeURIComponent(seriesId)}` : kind === "short" ? "/studio/flashy" : "/studio/videos")}
           onSaved={(media) => router.push(seriesId ? `/studio/series/${encodeURIComponent(seriesId)}` : `/studio/media/${encodeURIComponent(media.id)}`)}
         />
       </div>

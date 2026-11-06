@@ -76,7 +76,7 @@ textarea.control { resize: vertical; }
 .dialogHeader { display: flex; justify-content: space-between; gap: var(--nino-space-4); align-items: flex-start; }
 .dialogHeader h2 { font-size: var(--nino-text-title); margin: var(--nino-space-2) 0; }
 .dialogHeader button { flex: none; padding-inline: var(--nino-space-3); }
-.sheet { margin: 0 0 0 auto; min-height: 100dvh; max-height: 100dvh; border-radius: 0; width: min(30rem, 100%); }
+.sheet { inset: 0 0 0 auto; margin: 0; min-height: 100dvh; max-height: 100dvh; max-width: 100%; border-radius: 0; width: min(30rem, 100%); }
 .tabs { min-width: 0; }
 .tabList { display: flex; gap: var(--nino-space-2); overflow-x: auto; padding: var(--nino-space-2); border-bottom: 1px solid var(--nino-border); }
 .tabList button { background: transparent; border: 0; border-bottom: 3px solid transparent; min-height: var(--nino-target); color: var(--nino-muted); padding: var(--nino-space-3); white-space: nowrap; }

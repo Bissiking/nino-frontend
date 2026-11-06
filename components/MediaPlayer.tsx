@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Hls, { ErrorTypes, Events } from "hls.js";
 import {
-  Check, Gauge, Loader2, Maximize, Minimize, Pause, PictureInPicture, Play, Radio,
+  Loader2, Maximize, Minimize, Pause, PictureInPicture, Play, Radio,
   RectangleHorizontal, RotateCw, SkipBack, SkipForward, Volume1, Volume2, VolumeX
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { Icon } from "@/components/icons";
+import { Menu } from "@/components/ui";
 import type { StreamDecision } from "@/types/nino";
 
 export type PlayerUpNext = {
@@ -90,8 +92,7 @@ export function MediaPlayer({
   const [qualities, setQualities] = useState<Array<{ index: number; label: string; height: number }>>([]);
   const [quality, setQuality] = useState<number>(-1);
   const [showControls, setShowControls] = useState(true);
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const hideTimerRef = useRef<number | null>(null);
   const onlineRef = useRef(true);
@@ -302,12 +303,13 @@ export function MediaPlayer({
     if (index === -1) hls.currentLevel = -1;
     else hls.currentLevel = index;
     setQuality(index);
-    setShowQualityMenu(false);
+
   }
 
   function handleKey(event: React.KeyboardEvent) {
-    if (!controls) return;
+    if (!controls || event.defaultPrevented) return;
     const target = event.target as HTMLElement;
+    if (target.closest("button, a, [role=menu]")) return;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
     switch (event.key) {
       case " ":
@@ -354,7 +356,7 @@ export function MediaPlayer({
     if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
     hideTimerRef.current = window.setTimeout(() => {
       const video = videoRef.current;
-      if (video && !video.paused) setShowControls(false);
+      if (video && !video.paused && !containerRef.current?.contains(document.activeElement)) setShowControls(false);
     }, 2600);
   }
 
@@ -527,11 +529,11 @@ export function MediaPlayer({
   return (
     <div
       ref={containerRef}
-      className={`mediaPlayer ${isCinema ? "isCinema" : ""} ${controls && showControls ? "hasControls" : ""} ${className ?? ""}`}
+      className={`mediaPlayer ${isCinema ? "isCinema" : ""} ${controls && (showControls || settingsOpen) ? "hasControls" : ""} ${className ?? ""}`}
       onKeyDown={handleKey}
       onMouseMove={pokeControls}
       onTouchStart={pokeControls}
-      onMouseLeave={() => { if (playing && !isPip) setShowControls(false); }}
+      onMouseLeave={() => { if (playing && !isPip && !settingsOpen && !containerRef.current?.contains(document.activeElement)) setShowControls(false); }}
     >
       <video
         ref={videoRef}
@@ -653,30 +655,13 @@ export function MediaPlayer({
             </div>
 
             <div className="playerBarRight">
-              {qualities.length > 1 ? (
-                <div className="playerMenuWrap">
-                  <button className="playerBtn" type="button" onClick={() => setShowQualityMenu((c) => !c)} aria-label="Qualité" aria-expanded={showQualityMenu}><Gauge size={18} aria-hidden="true" />{quality === -1 ? "Auto" : `${qualities.find((q) => q.index === quality)?.label ?? ""}`}</button>
-                  {showQualityMenu ? (
-                    <div className="playerMenu" role="menu" aria-label="Qualité">
-                      <button type="button" role="menuitem" onClick={() => changeQuality(-1)} className={quality === -1 ? "isActive" : undefined}><Check size={15} aria-hidden="true" />Auto</button>
-                      {qualities.map((q) => (
-                        <button key={q.index} type="button" role="menuitem" className={quality === q.index ? "isActive" : undefined} onClick={() => changeQuality(q.index)}><Check size={15} aria-hidden="true" />{q.label}</button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className="playerMenuWrap">
-                <button className="playerBtn" type="button" onClick={() => setShowSpeedMenu((c) => !c)} aria-label="Vitesse de lecture" aria-expanded={showSpeedMenu}>{speed}x</button>
-                {showSpeedMenu ? (
-                  <div className="playerMenu" role="menu" aria-label="Vitesse de lecture">
-                    {SPEED_OPTIONS.map((rate) => (
-                      <button key={rate} type="button" role="menuitem" className={speed === rate ? "isActive" : undefined} onClick={() => { setPlaybackRate(rate); setShowSpeedMenu(false); }}><Check size={15} aria-hidden="true" />{rate}x</button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
+              <Menu label="Réglages de lecture" trigger={<><Icon name="settings" size={20} /><span className="ninoPlayerSettingsLabel">Réglages</span></>} triggerClassName="playerBtn ninoPlayerSettings" placement="top" onOpenChange={setSettingsOpen} groups={[
+                ...(qualities.length > 1 ? [{ label: "Qualité", items: [
+                  { id: "auto", label: "Automatique", selected: quality === -1, onSelect: () => changeQuality(-1) },
+                  ...qualities.map((item) => ({ id: `quality-${item.index}`, label: item.label, selected: quality === item.index, onSelect: () => changeQuality(item.index) }))
+                ] }] : []),
+                { label: "Vitesse de lecture", items: SPEED_OPTIONS.map((rate) => ({ id: `speed-${rate}`, label: rate === 1 ? "Normale · 1×" : `${rate}×`, selected: speed === rate, onSelect: () => setPlaybackRate(rate) })) }
+              ]} />
 
               <button className="playerBtn playerCinemaBtn" type="button" onClick={toggleCinema} aria-label={isCinema ? "Quitter le mode cinéma" : "Mode cinéma"}><RectangleHorizontal size={18} aria-hidden="true" /></button>
               <button className="playerBtn playerPipBtn" type="button" onClick={() => void togglePip()} aria-label={isPip ? "Quitter le PiP" : "Image dans l’image"}><PictureInPicture size={18} aria-hidden="true" /></button>

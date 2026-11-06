@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Bell, Check, CheckCheck, CircleAlert, Inbox, Loader2, RefreshCw, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Icon } from "@/components/icons";
+import { Sheet } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { NotificationItem } from "@/types/nino";
 
@@ -17,8 +18,6 @@ export function StudioNotifications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,24 +32,6 @@ export function StudioNotifications() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => {
-    if (!open) return;
-    function close(event: MouseEvent) {
-      if (panelRef.current?.contains(event.target as Node) || triggerRef.current?.contains(event.target as Node)) return;
-      setOpen(false);
-    }
-    function keydown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      triggerRef.current?.focus();
-    }
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", keydown);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", keydown);
-    };
-  }, [open]);
 
   async function markRead(item: NotificationItem) {
     if (item.is_read) return;
@@ -80,24 +61,19 @@ export function StudioNotifications() {
 
   return (
     <div className="studioNotifications">
-      <button ref={triggerRef} className="studioNotification" type="button" onClick={() => setOpen((value) => !value)} aria-label={`Notifications${unread ? ` — ${unread} non lue${unread > 1 ? "s" : ""}` : " — aucune non lue"}`} aria-haspopup="dialog" aria-expanded={open}>
-        <Bell size={20} aria-hidden="true" />
+      <button className="studioNotification" type="button" onClick={() => setOpen((value) => !value)} aria-label={`Notifications${unread ? ` — ${unread} non lue${unread > 1 ? "s" : ""}` : " — aucune non lue"}`} aria-haspopup="dialog" aria-expanded={open}>
+        <Icon name="notification" size={20} aria-hidden="true" />
         {unread ? <span aria-hidden="true">{unread > 9 ? "9+" : unread}</span> : null}
       </button>
 
-      {open ? (
-        <div ref={panelRef} className="studioNotificationPanel" role="dialog" aria-modal="false" aria-labelledby="studio-notification-title">
-          <header>
-            <div><h2 id="studio-notification-title">Notifications</h2><p>{unread ? `${unread} non lue${unread > 1 ? "s" : ""}` : "Vous êtes à jour"}</p></div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Fermer les notifications"><X size={18} /></button>
-          </header>
-          {unread ? <button className="studioMarkAllRead" type="button" onClick={() => void markAllRead()} disabled={acting}>{acting ? <Loader2 className="spin" size={15} /> : <CheckCheck size={15} />}Tout marquer comme lu</button> : null}
-          {loading ? <div className="studioNotificationState" role="status"><Loader2 className="spin" size={20} />Chargement…</div> : null}
-          {error && !loading ? <div className="studioNotificationState isError" role="alert"><CircleAlert size={20} /><span>{error}</span><button type="button" onClick={() => void load()}><RefreshCw size={15} />Réessayer</button></div> : null}
-          {!loading && !error && !items.length ? <div className="studioNotificationState"><Inbox size={24} /><strong>Aucune notification</strong><span>Les alertes de publication et du système apparaîtront ici.</span></div> : null}
-          {!loading && items.length ? <ul>{items.map((item) => <li key={item.id} className={`${item.is_read ? "isRead" : ""} is${item.level}`}><button type="button" onClick={() => void markRead(item)}><span className="studioNotificationDot" aria-hidden="true" /><span><strong>{item.title}</strong><small>{item.message}</small><time dateTime={item.created_at}>{formatNotificationDate(item.created_at)}</time></span>{item.is_read ? <Check size={15} aria-label="Lue" /> : <span className="srOnly">Marquer comme lue</span>}</button></li>)}</ul> : null}
-        </div>
-      ) : null}
+      <Sheet open={open} onClose={() => setOpen(false)} title="Notifications" className="ninoNotificationsSheet">
+          <p className="ninoNotificationSummary">{loading ? "Chargement…" : error ? "Chargement incomplet" : unread ? `${unread} non lue${unread > 1 ? "s" : ""}` : "Vous êtes à jour"}</p>
+          {unread ? <button className="studioMarkAllRead" type="button" onClick={() => void markAllRead()} disabled={acting || loading}>{acting ? <Icon name="loader" className="spin" size={15} /> : <Icon name="check" size={15} />}Tout marquer comme lu</button> : null}
+          {loading ? <div className="studioNotificationState" role="status"><Icon name="loader" className="spin" size={20} />Chargement…</div> : null}
+          {error && !loading ? <div className="studioNotificationState isError" role="alert"><Icon name="warning" size={20} /><span>{error}</span><button type="button" onClick={() => void load()}><Icon name="retry" size={15} />Réessayer</button></div> : null}
+          {!loading && !error && !items.length ? <div className="studioNotificationState"><Icon name="notification" size={24} /><strong>Aucune notification</strong><span>Les alertes de publication et du système apparaîtront ici.</span></div> : null}
+          {!loading && items.length ? <ul>{items.map((item) => <li key={item.id} className={`${item.is_read ? "isRead" : ""} is${item.level}`}><button type="button" onClick={() => void markRead(item)}><span className="studioNotificationDot" aria-hidden="true" /><span><strong>{item.title}</strong><small>{item.message}</small><time dateTime={item.created_at}>{formatNotificationDate(item.created_at)}</time></span>{item.is_read ? <Icon name="check" size={15} decorative={false} label="Lue" /> : <span className="srOnly">Marquer comme lue</span>}</button></li>)}</ul> : null}
+        </Sheet>
     </div>
   );
 }

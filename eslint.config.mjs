@@ -71,5 +71,5 @@ export default defineConfig([
 ],
     rules: { "no-restricted-imports": "off" }
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"])
+  globalIgnores([".backup/**", ".next/**", "out/**", "build/**", "next-env.d.ts"])
 ]);

@@ -2,145 +2,93 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  CalendarDays,
-  Clapperboard,
-  Film,
-  LayoutDashboard,
-  Menu,
-  Plus,
-  Radio,
-  Search,
-  Settings,
-  X,
-  Zap
-} from "lucide-react";
+import { Icon } from "@/components/icons";
+import { Dialog, Sheet, Menu } from "@/components/ui";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { TvNavigation } from "@/components/TvNavigation";
 import { StudioNotifications } from "@/components/studio/StudioNotifications";
 import { api } from "@/lib/api";
+import { studioNavigation, isNavigationActive } from "@/lib/navigation";
+import type { User } from "@/types/nino";
 
-const studioNav = [
-  { id: "overview", href: "/studio/overview", label: "Tableau", icon: LayoutDashboard },
-  { id: "videos", href: "/studio/videos", label: "Vidéos", icon: Film },
-  { id: "series", href: "/studio/series", label: "Séries", icon: Clapperboard },
-  { id: "flashy", href: "/studio/flashy", label: "Flashy", icon: Zap },
-  { id: "schedule", href: "/studio/schedule", label: "Planning", icon: CalendarDays },
-  { id: "live", href: "/studio/live", label: "DEV", icon: Radio },
-  { id: "administration", href: "/studio/administration", label: "Système", icon: Settings }
-];
+const createGroups = [{ label: "Ajouter à la bibliothèque", items: [
+  { id: "video", href: "/studio/videos/new", label: "Nouvelle vidéo", description: "Vidéo ou épisode d’une série", icon: "video" },
+  { id: "flashy", href: "/studio/videos/new?kind=short", label: "Nouveau Flashy", description: "Format court vertical", icon: "flashy" },
+  { id: "series", href: "/studio/series/new", label: "Nouvelle série", description: "Organiser des saisons et épisodes", icon: "library" }
+] }];
 
 export function StudioShell({ children, immersive = false }: { children: React.ReactNode; immersive?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
-  const createRef = useRef<HTMLDivElement>(null);
-  const [displayName, setDisplayName] = useState("Compte Nino");
-
-  useEffect(() => {
-    if (!createOpen) return;
-    function close(event: MouseEvent) {
-      if (!createRef.current?.contains(event.target as Node)) setCreateOpen(false);
-    }
-    function keydown(event: KeyboardEvent) {
-      if (event.key === "Escape") setCreateOpen(false);
-    }
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", keydown);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", keydown);
-    };
-  }, [createOpen]);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     let active = true;
-    api.me().then((user) => { if (active) setDisplayName(user.display_name || user.email || "Studio"); }).catch(() => null);
+    api.me().then((account) => { if (active) setUser(account); }).catch(() => null);
     return () => { active = false; };
   }, []);
 
-  useEffect(() => setMenuOpen(false), [pathname]);
-
   useEffect(() => {
     function onShortcut(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        document.getElementById("studio-global-search")?.focus();
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k" && !document.querySelector("dialog[open]")) {
+        event.preventDefault(); setSearchOpen(true);
       }
     }
+    function onResize() { if (window.innerWidth > 860) setMenuOpen(false); }
     window.addEventListener("keydown", onShortcut);
-    return () => window.removeEventListener("keydown", onShortcut);
+    window.addEventListener("resize", onResize);
+    return () => { window.removeEventListener("keydown", onShortcut); window.removeEventListener("resize", onResize); };
   }, []);
 
   function submitSearch(event: FormEvent) {
     event.preventDefault();
-    const query = search.trim();
-    router.push(query ? `/studio/videos?q=${encodeURIComponent(query)}` : "/studio/videos");
+    setSearchOpen(false);
+    router.push(search.trim() ? `/studio/videos?q=${encodeURIComponent(search.trim())}` : "/studio/videos");
   }
 
-  const activeSection = pathname.includes("/studio/overview") ? "overview"
-    : pathname.includes("/studio/videos") ? "videos"
-    : pathname.includes("/studio/series") ? "series"
-    : pathname.includes("/studio/flashy") ? "flashy"
-    : pathname.includes("/studio/schedule") ? "schedule"
-    : pathname.includes("/studio/live") ? "live"
-    : pathname.includes("/studio/transcode") || pathname.includes("/studio/administration") ? "administration"
-    : "";
+  function navigation() {
+    return <nav className="ninoStudioNavigation" aria-label="Navigation Nino Studio">
+      {studioNavigation.map((group) => <section key={group.label}><h2>{group.label}</h2>{group.items.map((item) => {
+        const active = isNavigationActive(pathname, item.href) || (item.href === "/studio/videos" && pathname.startsWith("/studio/media/"));
+        return <Link key={item.href} title={item.label} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active ? "page" : undefined}><Icon name={item.icon} size={21} /><span>{item.label}</span></Link>;
+      })}</section>)}
+    </nav>;
+  }
 
-  return (
-    <div className={`studioShell ${immersive ? "isImmersive" : ""}`}>
-      <header className="studioShellHeader">
-        <div className="studioShellBrandRow">
-          <button className="studioMenuToggle" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "Fermer la navigation" : "Ouvrir la navigation"} aria-expanded={menuOpen}>
-            {menuOpen ? <X size={21} /> : <Menu size={21} />}
-          </button>
-          <Link className="studioShellBrand" href="/studio/overview" aria-label="Nino Studio — tableau">
-            <Image src="/logo_nino.png" alt="Nino" width={92} height={35} priority />
-            <span>Studio</span>
-          </Link>
-        </div>
-
-        <form className="studioGlobalSearch" role="search" onSubmit={submitSearch}>
-          <Search size={18} aria-hidden="true" />
-          <input id="studio-global-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher un titre, un synopsis ou un genre…" aria-label="Rechercher dans Nino Studio" />
-          <kbd aria-hidden="true">⌘ K</kbd>
-        </form>
-
-        <div className="studioShellActions">
-          <div className="studioCreateMenu" ref={createRef}>
-            <button className="primaryButton studioNewMedia" type="button" onClick={() => setCreateOpen((value) => !value)} aria-haspopup="menu" aria-expanded={createOpen}><Plus size={18} aria-hidden="true" /><span>Créer</span></button>
-            {createOpen ? <div role="menu"><Link role="menuitem" href="/studio/videos/new" onClick={() => setCreateOpen(false)}><Film size={17} />Nouvelle vidéo</Link><Link role="menuitem" href="/studio/flashy" onClick={() => setCreateOpen(false)}><Zap size={17} />Nouveau Flashy</Link><Link role="menuitem" href="/studio/series/new" onClick={() => setCreateOpen(false)}><Clapperboard size={17} />Nouvelle série</Link></div> : null}
-          </div>
-          <StudioNotifications />
-          <span className="studioAccountCopy"><strong>{displayName}</strong><small>Administrateur</small></span>
-          <ProfileMenu />
-        </div>
-      </header>
-
-      <aside className={`studioShellSidebar ${menuOpen ? "isOpen" : ""}`} aria-label="Navigation Nino Studio">
-        <Link className="studioSidebarBrand" href="/studio/overview" aria-label="Nino Studio — tableau">
-          <Image src="/logo_nino.png" alt="Nino" width={108} height={41} priority />
-          <span>Studio</span>
-        </Link>
-        <nav>
-          {studioNav.map((item) => {
-            const Icon = item.icon;
-            const active = activeSection === item.id;
-            return <Link key={item.id} href={item.href} className={active ? "isActive" : undefined} aria-current={active ? "page" : undefined}><Icon size={19} aria-hidden="true" /><span>{item.label}</span></Link>;
-          })}
-        </nav>
-        <div className="studioSidebarAccount">
-          <ProfileMenu />
-          <span><strong>{displayName}</strong><small>Administrateur</small></span>
-        </div>
-        <Link className="studioBackToNino" href="/">Retourner sur Nino</Link>
-      </aside>
-
-      {menuOpen ? <button className="studioSidebarBackdrop" type="button" onClick={() => setMenuOpen(false)} aria-label="Fermer la navigation" /> : null}
-      <main className="studioShellContent">{children}</main>
-    </div>
-  );
+  return <div className={`studioShell ninoNavigationRefresh ${immersive ? "isImmersive" : ""}`}>
+    <TvNavigation />
+    <header className="studioShellHeader">
+      <div className="studioShellBrandRow">
+        <button className="studioMenuToggle" type="button" onClick={() => setMenuOpen(true)} aria-label="Ouvrir la navigation" aria-haspopup="dialog" aria-expanded={menuOpen}><Icon name="menu" size={23} /></button>
+        <Link className="studioShellBrand" href="/studio/overview" aria-label="Nino Studio — tableau"><Image src="/logo_nino.png" alt="Nino" width={92} height={35} priority /><span>Studio</span></Link>
+      </div>
+      <button className="ninoStudioSearch" type="button" onClick={() => setSearchOpen(true)} aria-label="Rechercher dans Nino Studio" aria-haspopup="dialog" aria-expanded={searchOpen}><Icon name="search" size={20} /><span>Rechercher dans Studio</span><kbd>Ctrl / ⌘ K</kbd></button>
+      <div className="studioShellActions">
+        {user?.is_admin ? <Menu key={`create:${pathname}`} label="Créer un contenu" trigger={<><Icon name="plus" size={20} /><span>Créer</span></>} triggerClassName="ninoCreateTrigger" groups={createGroups} /> : null}
+        <StudioNotifications key={`notifications:${pathname}`} />
+        <ProfileMenu key={`account:${pathname}`} />
+      </div>
+    </header>
+    <aside className="studioShellSidebar" aria-label="Espace Studio">
+      {user?.is_admin ? navigation() : <p className="ninoMenuStatus">{user ? "Accès administrateur requis" : "Vérification de l’accès…"}</p>}
+      <Link className="ninoStudioBack" href="/"><Icon name="chevron-left" size={18} /><span>Retourner sur Nino</span></Link>
+    </aside>
+    <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Nino Studio" className="ninoStudioDrawer">
+      {user?.is_admin ? navigation() : <p>Accès administrateur requis.</p>}
+      <Link className="ninoStudioBack" href="/" onClick={() => setMenuOpen(false)}><Icon name="chevron-left" size={18} />Retourner sur Nino</Link>
+    </Sheet>
+    <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} title="Rechercher dans Studio" className="ninoSearchDialog" initialFocus="#studio-command-query">
+      <form className="ninoCommandSearch" role="search" onSubmit={submitSearch}>
+        <label htmlFor="studio-command-query">Titre, synopsis ou genre d’une vidéo</label>
+        <div><Icon name="search" size={22} /><input id="studio-command-query" type="search" maxLength={120} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Que cherchez-vous ?" /><button type="submit">Rechercher</button></div>
+      </form>
+      <nav className="ninoQuickLinks" aria-label="Accès rapide Studio"><h3>Accès rapide</h3>{studioNavigation.flatMap((group) => group.items).map((item) => <Link key={item.href} href={item.href} onClick={() => setSearchOpen(false)}><Icon name={item.icon} size={20} /><span>{item.label}</span><Icon name="chevron-right" size={16} /></Link>)}</nav>
+    </Dialog>
+    <main className="studioShellContent">{children}</main>
+  </div>;
 }

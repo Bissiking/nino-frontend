@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import {
-  AlertTriangle, Bell, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
+  Activity, CalendarDays, LogOut, PanelsTopLeft, Radio, Settings, UsersRound, Menu as MenuIcon, AlertTriangle, Bell, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
   CircleHelp, Film, Heart, Home, Info, LibraryBig, Loader2, Lock, Pause, Play,
   Plus, RotateCw, Save, Search, ShieldCheck, Trash2, UserRound, WifiOff, X, Zap
 } from "lucide-react";
@@ -39,6 +39,14 @@ export const iconRegistry = {
   video: { default: Film, provider: "lucide" },
   library: { default: LibraryBig, provider: "lucide" },
   flashy: { default: Zap, provider: "lucide" },
+  dashboard: { default: PanelsTopLeft, provider: "lucide" },
+  calendar: { default: CalendarDays, provider: "lucide" },
+  activity: { default: Activity, provider: "lucide" },
+  settings: { default: Settings, provider: "lucide" },
+  live: { default: Radio, provider: "lucide" },
+  users: { default: UsersRound, provider: "lucide" },
+  logout: { default: LogOut, provider: "lucide" },
+  menu: { default: MenuIcon, provider: "lucide" },
   unknown: { default: CircleHelp, provider: "lucide" }
 } as const;
 

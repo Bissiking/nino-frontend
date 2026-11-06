@@ -1,137 +1,72 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, LogOut, PanelsTopLeft, Search, UserRound, UsersRound, X } from "lucide-react";
-import { api } from "@/lib/api";
+import { Icon } from "@/components/icons";
+import { Dialog } from "@/components/ui";
+import { api, NinoApiError } from "@/lib/api";
 import { clearSession, getProfileId, getRefreshToken } from "@/lib/session";
+import { viewerNavigation, isNavigationActive } from "@/lib/navigation";
 import pkg from "@/package.json";
 import type { Profile, User } from "@/types/nino";
-
-const focusableSelector = "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
 export function ProfileMenu() {
   const pathname = usePathname();
   const router = useRouter();
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    Promise.allSettled([api.me(), api.profiles()]).then(([userResult, profilesResult]) => {
-      if (!active) return;
-      if (userResult.status === "fulfilled") setUser(userResult.value);
-      if (profilesResult.status === "fulfilled") {
-        const selectedId = getProfileId();
-        setProfile(profilesResult.value.find((item) => item.id === selectedId) ?? profilesResult.value[0] ?? null);
-      }
-    });
-    return () => { active = false; };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const [account, profiles] = await Promise.allSettled([api.me(), api.profiles()]);
+    setUser(account.status === "fulfilled" ? account.value : null);
+    if (profiles.status === "fulfilled") {
+      const selectedId = getProfileId();
+      // An invalid explicit profile must never silently become another profile.
+      setProfile(selectedId ? profiles.value.find((item) => item.id === selectedId) ?? null : profiles.value[0] ?? null);
+      setImageFailed(false);
+    } else setProfile(null);
+    const failure = account.status === "rejected" ? account.reason : profiles.status === "rejected" ? profiles.reason : null;
+    if (failure) setError(failure instanceof NinoApiError && failure.status === 403 ? "Les informations du compte ne sont pas accessibles." : "Les informations du profil sont indisponibles. Vous pouvez continuer à naviguer ou réessayer.");
+    setLoading(false);
   }, []);
-
-  useEffect(() => setOpen(false), [pathname]);
-  useEffect(() => setImageFailed(false), [profile?.avatar]);
-
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const dialog = dialogRef.current;
-    const first = dialog?.querySelector<HTMLElement>(focusableSelector);
-    window.requestAnimationFrame(() => first?.focus());
-
-    function onKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape" || event.key === "BrowserBack" || event.key === "GoBack") {
-        event.preventDefault();
-        setOpen(false);
-        window.requestAnimationFrame(() => triggerRef.current?.focus());
-        return;
-      }
-      if (event.key !== "Tab" || !dialog) return;
-      const controls = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector));
-      if (!controls.length) return;
-      const firstControl = controls[0];
-      const lastControl = controls[controls.length - 1];
-      if (event.shiftKey && document.activeElement === firstControl) {
-        event.preventDefault();
-        lastControl.focus();
-      } else if (!event.shiftKey && document.activeElement === lastControl) {
-        event.preventDefault();
-        firstControl.focus();
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  useEffect(() => { void load(); }, [load]);
 
   async function logout() {
+    if (leaving) return;
+    setLeaving(true);
     const refreshToken = getRefreshToken();
-    try {
-      if (refreshToken) await api.logout(refreshToken);
-    } catch (error) {
-      if (error instanceof Error) console.error("Déconnexion distante impossible :", error.message);
-    } finally {
-      clearSession();
-      router.push("/login");
-    }
+    try { if (refreshToken) await api.logout(refreshToken); }
+    catch { /* Local session is cleared even when the server cannot be reached. */ }
+    finally { clearSession(); router.push("/login"); }
   }
 
   const avatarUrl = api.assetUrl(profile?.avatar ?? null);
-  const displayName = profile?.name ?? user?.display_name ?? "Profil Nino";
+  const displayName = profile?.name ?? user?.display_name ?? "Votre espace Nino";
   const initial = displayName.trim().slice(0, 1).toUpperCase() || "N";
+  const avatar = avatarUrl && !imageFailed ? <img src={avatarUrl} alt="" onError={() => setImageFailed(true)} /> : <span aria-hidden="true">{initial}</span>;
 
-  return (
-    <>
-      <button ref={triggerRef} className="profileAvatar" type="button" onClick={() => setOpen(true)} aria-label="Ouvrir le menu profil" aria-haspopup="dialog" aria-expanded={open}>
-        {avatarUrl && !imageFailed ? <img src={avatarUrl} alt="" onError={() => setImageFailed(true)} /> : <span aria-hidden="true">{initial}</span>}
-      </button>
-
-      {open ? (
-        <div className="profileMenuLayer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) { setOpen(false); triggerRef.current?.focus(); } }}>
-          <div ref={dialogRef} className="profileMenuDialog" role="dialog" aria-modal="true" aria-labelledby="profile-menu-title">
-            <header className="profileMenuHeader">
-              <span className="profileMenuAvatar">
-                {avatarUrl && !imageFailed ? <img src={avatarUrl} alt="" /> : <span aria-hidden="true">{initial}</span>}
-              </span>
-              <div><h2 id="profile-menu-title">{displayName}</h2><p>{user?.email ?? "Profil actif"}</p></div>
-              <button className="profileMenuClose" type="button" onClick={() => { setOpen(false); triggerRef.current?.focus(); }} aria-label="Fermer le menu"><X size={18} aria-hidden="true" /></button>
-            </header>
-
-            <div className="profileMenuBody">
-              <section aria-labelledby="profile-nav-title">
-                <h3 id="profile-nav-title">Navigation</h3>
-                <Link href="/" onClick={() => setOpen(false)}><Home size={19} aria-hidden="true" />Accueil</Link>
-                <Link href="/search" onClick={() => setOpen(false)}><Search size={19} aria-hidden="true" />Recherche</Link>
-                <Link href="/profiles" onClick={() => setOpen(false)}><UsersRound size={19} aria-hidden="true" />Changer de profil</Link>
-              </section>
-
-              {user?.is_admin ? <div className="profileMenuSeparator" /> : null}
-              {user?.is_admin ? (
-                <section aria-labelledby="profile-admin-title">
-                  <h3 id="profile-admin-title">Administration</h3>
-                  <Link href="/studio" onClick={() => setOpen(false)}><PanelsTopLeft size={19} aria-hidden="true" />Nino Studio</Link>
-                </section>
-              ) : null}
-
-              <div className="profileMenuSeparator" />
-              <section aria-label="Session">
-                <button className="profileMenuDanger" type="button" onClick={() => void logout()}><LogOut size={19} aria-hidden="true" />Déconnexion</button>
-              </section>
-            </div>
-
-            <footer><UserRound size={14} aria-hidden="true" /><span>Nino v{pkg.version}</span></footer>
-          </div>
-        </div>
-      ) : null}
-    </>
-  );
+  return <>
+    <button className="profileAvatar" type="button" onClick={() => setOpen(true)} aria-label="Ouvrir le menu profil" aria-haspopup="dialog" aria-expanded={open}>{avatar}</button>
+    <Dialog open={open} onClose={() => setOpen(false)} title="Votre espace" className="ninoAccountDialog">
+      <div className="ninoAccountIdentity"><span className="ninoAccountAvatar">{avatar}</span><div><strong>{displayName}</strong><p>{user?.email ?? "Profil Nino"}</p></div></div>
+      {loading ? <p className="ninoMenuStatus" role="status">Chargement du profil…</p> : null}
+      {error ? <div className="ninoMenuError" role="alert"><p>{error}</p><button type="button" onClick={() => void load()}><Icon name="retry" size={17} />Réessayer</button></div> : null}
+      <nav className="ninoAccountNavigation" aria-label="Explorer Nino">
+        {viewerNavigation.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} aria-current={isNavigationActive(pathname, item.href) ? "page" : undefined}><Icon name={item.icon} size={22} /><span>{item.label}</span><Icon name="chevron-right" size={16} /></Link>)}
+      </nav>
+      <div className="ninoAccountTools">
+        <Link href="/profiles" onClick={() => setOpen(false)}><Icon name="users" size={21} /><span>Changer ou gérer les profils</span><Icon name="chevron-right" size={16} /></Link>
+        {user?.is_admin ? <Link href={pathname.startsWith("/studio") ? "/" : "/studio/overview"} onClick={() => setOpen(false)}><Icon name="dashboard" size={21} /><span>{pathname.startsWith("/studio") ? "Retourner sur Nino" : "Ouvrir Nino Studio"}</span><Icon name="chevron-right" size={16} /></Link> : null}
+      </div>
+      <footer className="ninoAccountFooter"><small>Nino v{pkg.version}</small><button type="button" onClick={() => void logout()} disabled={leaving}><Icon name={leaving ? "loader" : "logout"} size={19} />{leaving ? "Déconnexion…" : "Se déconnecter"}</button></footer>
+    </Dialog>
+  </>;
 }

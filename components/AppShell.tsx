@@ -8,21 +8,10 @@ import { ProfileMenu } from "./ProfileMenu";
 import { TvNavigation } from "./TvNavigation";
 import { StudioShell } from "./studio/StudioShell";
 import pkg from "@/package.json";
+import { Menu } from "@/components/ui";
+import { viewerNavigation, isNavigationActive } from "@/lib/navigation";
 
-const primaryNav = [
-  { href: "/", label: "Accueil", icon: "home" },
-  { href: "/search", label: "Recherche", icon: "search" },
-  { href: "/videos", label: "Vidéos", icon: "video" },
-  { href: "/series", label: "Séries", icon: "library" },
-  { href: "/flashy", label: "Flashy", icon: "flashy" }
-];
-
-const mobileNav = [primaryNav[0], primaryNav[4], primaryNav[1], primaryNav[3]];
-
-function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return !href.includes("#") && pathname.startsWith(href);
-}
+const explorerGroups = [{ label: "Explorer Nino", items: viewerNavigation.filter((item) => ["/videos", "/series"].includes(item.href)).map((item) => ({ ...item, id: item.href })) }];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,13 +27,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Image src="/logo_nino.png" alt="Nino" width={111} height={42} priority />
         </Link>
         <nav className="desktopNav" aria-label="Navigation principale">
-          {primaryNav.map((item) => {
-            const active = isActive(pathname, item.href);
-            return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-current={active ? "page" : undefined}>{item.label}</Link>;
-          })}
+          <Link className={pathname === "/" ? "active" : ""} href="/" aria-current={pathname === "/" ? "page" : undefined}>Accueil</Link>
+          <Menu key={pathname} label="Explorer" trigger={<>Explorer<Icon name="chevron-down" size={15} /></>} groups={explorerGroups} active={["/videos", "/series"].some((href) => isNavigationActive(pathname, href))} />
+          <Link className={pathname === "/flashy" ? "active" : ""} href="/flashy" aria-current={pathname === "/flashy" ? "page" : undefined}>Flashy</Link>
         </nav>
         <div className="topActions">
-          <ProfileMenu />
+          <Link href="/search" className="ninoSearchAction" aria-label="Rechercher un programme"><Icon name="search" size={22} /></Link>
+          <ProfileMenu key={pathname} />
         </div>
       </header>
 
@@ -52,16 +41,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <footer className="ninoFooter" aria-label="Pied de page Nino">
         <div className="ninoFooterBrand"><Image src="/logo_nino_small.png" alt="" width={34} height={34} /><span><strong>Nino</strong><small>Version {pkg.version}</small></span></div>
-        <nav aria-label="Liens rapides"><Link href="/">Accueil</Link><Link href="/search">Recherche</Link><Link href="/videos">Vidéos</Link><Link href="/series">Séries</Link><Link href="/flashy">Flashy</Link></nav>
+        <nav aria-label="Liens rapides">{viewerNavigation.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}</nav>
         <small>Vos programmes. Votre univers.</small>
       </footer>
 
       <nav className="bottomNav" aria-label="Navigation mobile">
-        {mobileNav.map((item) => {
-
-          const active = isActive(pathname, item.href);
+        {[viewerNavigation[0], viewerNavigation[4], viewerNavigation[3]].map((item) => {
+          const active = isNavigationActive(pathname, item.href);
           return <Link className={active ? "active" : ""} href={item.href} key={item.label} aria-label={item.label} aria-current={active ? "page" : undefined}><Icon name={item.icon} variant="outline" size={21} /><span>{item.label}</span></Link>;
         })}
+        <Menu key={pathname} label="Explorer" trigger={<><Icon name="library" size={21} /><span>Explorer</span></>} groups={explorerGroups} placement="top" active={["/videos", "/series"].some((href) => isNavigationActive(pathname, href))} />
       </nav>
     </div>
   );

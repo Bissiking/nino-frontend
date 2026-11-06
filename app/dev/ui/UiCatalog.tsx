@@ -9,7 +9,7 @@ import {
   Alert, Badge, Breadcrumb, Button, Card, Dialog, EmptyState, ErrorState,
   ForbiddenState, IconButton, Loader, MediaArtwork, OfflineState, PageContainer,
   PageHeader, Pagination, Panel, Select, Sheet, Skeleton, Table, Tabs, TextArea,
-  TextField, Toast, UiTheme
+  TextField, Toast, UiTheme, Menu
 } from "@/components/ui";
 import styles from "./catalog.module.css";
 
@@ -57,6 +57,19 @@ export function UiCatalog() {
         <Button size="tv" onClick={() => setToast("Variante TV, cible de 56 px minimum.")}>Télévision</Button>
         <Button disabled>Indisponible</Button><Button busy>Enregistrement…</Button>
       </div>
+    </Panel>
+    <Panel title="Menus partagés">
+      <div className={styles.row}>
+        <Menu label="Actions de démonstration" trigger={<>Actions<Icon name="chevron-down" size={18} /></>} groups={[{ label: "Commandes", items: [
+          { id: "edit", label: "Modifier", icon: "settings", onSelect: () => setToast("Modification de démonstration.") },
+          { id: "disabled", label: "Indisponible", disabled: true },
+          { id: "preview", label: "Prévisualiser", icon: "play", onSelect: () => setToast("Aperçu de démonstration.") }
+        ] }]} />
+        <Menu label="Mode d’affichage de démonstration" trigger="Affichage" groups={[{ label: "Affichage", items: [
+          { id: "normal", label: "Standard", selected: !tv, onSelect: () => setTv(false) },
+          { id: "tv", label: "Télévision", selected: tv, onSelect: () => setTv(true) }
+        ] }]} />
+      </div><p>Flèches haut/bas, début/fin, recherche par lettres, Échap et retour au déclencheur. Les options indisponibles sont ignorées.</p>
     </Panel>
     <section><h2>États lisibles sans dépendre de la couleur</h2><div className={styles.row}>
       <Badge>Brouillon</Badge><Badge tone="warning">Planifié</Badge><Badge tone="success">Publié</Badge><Badge tone="danger">Échec</Badge>

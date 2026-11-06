@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { StudioShell } from "@/components/studio/StudioShell";
 import { StudioLibrary } from "@/components/studio/StudioLibrary";
 import { useStudioData } from "@/hooks/useStudioData";
 
 export default function FlashyPage() {
   const { media, loading, error, accessDenied, refresh } = useStudioData();
-  const [creating, setCreating] = useState(false);
+  const router = useRouter();
 
-  function handleDeleted(mediaId: string) {
+  function handleDeleted() {
     refresh();
   }
 
@@ -26,7 +26,7 @@ export default function FlashyPage() {
               <StudioLibrary
                 items={media.filter((item) => item.kind === "short")}
                 kind="flashy"
-                onCreate={() => setCreating(true)}
+                onCreate={() => router.push("/studio/videos/new?kind=short")}
                 onDeleted={handleDeleted}
               />
             </main>
