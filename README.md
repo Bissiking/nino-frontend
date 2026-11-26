@@ -102,3 +102,7 @@ npm start
 npm run typecheck
 npm run build
 ```
+
+## Publication programmée
+
+Les dates de publication sont reçues en UTC et converties dans le fuseau du navigateur pour les champs datetime-local. L'enregistrement utilise un instant ISO 8601 UTC. Déployer avec le backend 8.8.3. Les anciennes dates sans offset sont interprétées comme UTC par convention.

@@ -6,6 +6,11 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ---
 
+## [8.8.4] — 2026-11-26
+
+- Correctif des dates de publication : affichage local, envoi UTC et conservation de l'instant lors de la réédition.
+- À déployer conjointement avec le backend 8.8.3.
+
 ## [8.8.0] — 2026-08-24
 
 ### Nouveautés

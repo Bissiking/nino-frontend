@@ -6,6 +6,7 @@ import { AlertCircle, BellRing, Bold, CheckCircle2, Code2, FileStack, FileVideo2
 import { MediaPlayer } from "@/components/MediaPlayer";
 import { Markdown } from "@/components/Markdown";
 import { api } from "@/lib/api";
+import { publicationInput, publicationPayload, publicationDate } from "@/lib/publicationDates";
 import { CATEGORIES, CONTENT_FLAGS, VISIBILITY_LABELS } from "@/types/nino";
 import type { MediaItem, MediaWritePayload, StreamDecision } from "@/types/nino";
 import { extractVideoCandidates, parseVideoFilename, readVideoDuration } from "./videoUtils";
@@ -122,7 +123,7 @@ function initialForm(kind: MediaKind, media?: MediaItem | null, initialSeriesId 
     thumbnailUrl: media?.thumbnail_url ?? "",
     thumbnailVerticalUrl: media?.thumbnail_vertical_url ?? "",
     visibility: media?.visibility ?? "draft",
-    publishAt: media?.publish_at ? media.publish_at.slice(0, 16) : "",
+    publishAt: publicationInput(media?.publish_at),
     isAvailable: media?.is_available ?? true,
     notifyDiscord: media?.notify_discord ?? false,
     noSpoil: media?.no_spoil ?? false,
@@ -432,7 +433,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
     if (!isEditing || !media) return;
     setForm((current) => ({
       ...current,
-      publishAt: media.publish_at ? media.publish_at.slice(0, 16) : "",
+      publishAt: publicationInput(media.publish_at),
       visibility: media.visibility,
       isAvailable: media.is_available,
     }));
@@ -719,7 +720,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
       thumbnail_url: form.thumbnailUrl.trim() || null,
       thumbnail_vertical_url: form.thumbnailVerticalUrl.trim() || null,
       visibility: form.visibility,
-      publish_at: form.publishAt ? new Date(form.publishAt).toISOString() : null,
+      publish_at: publicationPayload(form.publishAt, media?.publish_at),
       is_available: form.isAvailable,
       notify_discord: isInherited ? inheritedNotifyDiscord : form.notifyDiscord,
       no_spoil: isSeries ? form.noSpoil : false,
@@ -1048,7 +1049,7 @@ export function MediaEditor({ kind, media, onCancel, onSaved, onDeleted, variant
         {isEditing && !isShort ? (
           <div className="isWide mediaPublishTools">
             <button type="button" className="studioSecondaryTool" onClick={restorePublishInfo} title="Réapplique la date et la visibilité enregistrées sur ce média."><RefreshCw size={16} aria-hidden="true" />Restaurer la date de publication</button>
-            <small className="mediaPublishInfo">Valeur enregistrée : {media?.publish_at ? new Date(media.publish_at).toLocaleString("fr-FR") : "aucune"} · visibilité « {media ? VISIBILITY_LABELS[media.visibility] ?? media.visibility : ""} »</small>
+            <small className="mediaPublishInfo">Valeur enregistrée : {media?.publish_at ? publicationDate(media.publish_at).toLocaleString("fr-FR") : "aucune"} · visibilité « {media ? VISIBILITY_LABELS[media.visibility] ?? media.visibility : ""} »</small>
           </div>
         ) : null}
         {isSeries ? <label className="mediaCheckbox isWide" title="Contrôle la visibilité des épisodes programmés sur la page publique de cette série.">
